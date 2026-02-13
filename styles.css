@@ -1,0 +1,211 @@
+/* Reset and base styles */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: #1a1a2e;
+  color: #eee;
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.container {
+  width: 100%;
+  max-width: 420px;
+  padding: 24px 20px;
+}
+
+/* Title */
+.title {
+  text-align: center;
+  font-size: 1.4rem;
+  font-weight: 600;
+  color: #e0e0e0;
+  margin-bottom: 20px;
+}
+
+/* Server settings */
+.settings {
+  margin-bottom: 16px;
+}
+
+.settings label {
+  display: block;
+  font-size: 0.8rem;
+  color: #999;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.server-input {
+  display: flex;
+  gap: 8px;
+}
+
+.server-input input {
+  flex: 1;
+  padding: 10px 12px;
+  border: 1px solid #333;
+  border-radius: 8px;
+  background: #16213e;
+  color: #eee;
+  font-size: 0.95rem;
+  outline: none;
+}
+
+.server-input input:focus {
+  border-color: #4a90d9;
+}
+
+.btn-connect {
+  padding: 10px 16px;
+  border: none;
+  border-radius: 8px;
+  background: #4a90d9;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn-connect:active {
+  background: #3a7bc8;
+}
+
+/* Status bar */
+.status {
+  text-align: center;
+  padding: 12px;
+  border-radius: 8px;
+  background: #16213e;
+  margin-bottom: 24px;
+  font-size: 0.9rem;
+  color: #999;
+  transition: all 0.3s;
+}
+
+.status.connected {
+  color: #4ecdc4;
+  border: 1px solid #4ecdc42a;
+}
+
+.status.error {
+  color: #ff6b6b;
+  border: 1px solid #ff6b6b2a;
+}
+
+/* Audio mode buttons */
+.mode-buttons {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+/* Shared button styles */
+.btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid transparent;
+  border-radius: 16px;
+  padding: 20px;
+  cursor: pointer;
+  transition: all 0.15s;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.btn:active {
+  transform: scale(0.97);
+}
+
+.btn-icon {
+  font-size: 2rem;
+  margin-bottom: 6px;
+}
+
+.btn-label {
+  font-size: 1.1rem;
+  font-weight: 600;
+}
+
+.btn-desc {
+  font-size: 0.8rem;
+  margin-top: 2px;
+  opacity: 0.7;
+}
+
+/* Gaming mode button */
+.btn-gaming {
+  background: linear-gradient(135deg, #2d1b69 0%, #1a1145 100%);
+  color: #c4b5fd;
+  border-color: #4c3a8f;
+}
+
+.btn-gaming:active {
+  background: linear-gradient(135deg, #3d2b79 0%, #2a2155 100%);
+}
+
+.btn-gaming.active {
+  border-color: #7c5cbf;
+  box-shadow: 0 0 20px #7c5cbf33;
+}
+
+/* Normal mode button */
+.btn-normal {
+  background: linear-gradient(135deg, #1b4332 0%, #0d2818 100%);
+  color: #86efac;
+  border-color: #2d6a4f;
+}
+
+.btn-normal:active {
+  background: linear-gradient(135deg, #2b5342 0%, #1d3828 100%);
+}
+
+.btn-normal.active {
+  border-color: #4ade80;
+  box-shadow: 0 0 20px #4ade8033;
+}
+
+/* Volume controls */
+.volume-controls {
+  display: flex;
+  gap: 12px;
+}
+
+.btn-volume {
+  flex: 1;
+  background: #16213e;
+  color: #94a3b8;
+  border-color: #2a3a5c;
+  padding: 16px;
+}
+
+.btn-volume:active {
+  background: #1e2d4a;
+  color: #e2e8f0;
+}
+
+.btn-volume .btn-icon {
+  font-size: 1.5rem;
+  margin-bottom: 4px;
+}
+
+.btn-volume .btn-label {
+  font-size: 0.95rem;
+}
+
+/* Feedback animation for button presses */
+.btn.sending {
+  opacity: 0.6;
+  pointer-events: none;
+}

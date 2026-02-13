@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#1a1a2e">
+  <title>LG TV Remote</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <h1 class="title">LG TV Remote</h1>
+
+    <!-- Connection settings -->
+    <div class="settings">
+      <label for="server-url">Proxy Server</label>
+      <div class="server-input">
+        <input type="text" id="server-url" placeholder="http://192.168.1.x:3000">
+        <button id="connect-btn" class="btn-connect">Connect</button>
+      </div>
+    </div>
+
+    <!-- Status display -->
+    <div id="status" class="status">
+      <span id="status-text">Not connected</span>
+    </div>
+
+    <!-- Audio mode buttons -->
+    <div class="mode-buttons">
+      <button id="gaming-btn" class="btn btn-gaming" onclick="setMode('gaming')">
+        <span class="btn-icon">🎮</span>
+        <span class="btn-label">Gaming Mode</span>
+        <span class="btn-desc">TV Speakers</span>
+      </button>
+      <button id="normal-btn" class="btn btn-normal" onclick="setMode('normal')">
+        <span class="btn-icon">📺</span>
+        <span class="btn-label">Normal Mode</span>
+        <span class="btn-desc">Sonos / HDMI ARC</span>
+      </button>
+    </div>
+
+    <!-- Volume controls -->
+    <div class="volume-controls">
+      <button class="btn btn-volume" onclick="adjustVolume('down')">
+        <span class="btn-icon">🔉</span>
+        <span class="btn-label">Vol −</span>
+      </button>
+      <button class="btn btn-volume" onclick="adjustVolume('up')">
+        <span class="btn-icon">🔊</span>
+        <span class="btn-label">Vol +</span>
+      </button>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
