@@ -4,6 +4,7 @@
 
 const express = require('express');
 const cors = require('cors');
+const path = require('path');
 const lgtv = require('lgtv2');
 const http = require('http');
 const net = require('net');
@@ -24,8 +25,9 @@ let kasaPlug = null;
 
 // ── Express setup ──────────────────────────────────────────────
 const app = express();
-app.use(cors());            // allow requests from GitHub Pages
+app.use(cors());
 app.use(express.json());
+app.use(express.static(path.join(__dirname, '..')));  // serve frontend files
 
 // ── LG TV connection ──────────────────────────────────────────
 let tvConnection = null;
