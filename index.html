@@ -27,6 +27,20 @@
       <span id="status-text">Not connected</span>
     </div>
 
+    <!-- Device status indicators -->
+    <div class="device-status">
+      <div class="device-indicator">
+        <span id="plug-dot" class="dot dot-unknown"></span>
+        <span class="device-label">Sonos Power</span>
+        <span id="plug-state" class="device-state">--</span>
+      </div>
+      <div class="device-indicator">
+        <span id="sonos-dot" class="dot dot-unknown"></span>
+        <span class="device-label">Sonos</span>
+        <span id="sonos-state" class="device-state">--</span>
+      </div>
+    </div>
+
     <!-- Audio mode buttons -->
     <div class="mode-buttons">
       <button id="gaming-btn" class="btn btn-gaming" onclick="setMode('gaming')">

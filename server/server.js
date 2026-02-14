@@ -6,14 +6,21 @@ const express = require('express');
 const cors = require('cors');
 const lgtv = require('lgtv2');
 const http = require('http');
+const net = require('net');
+const { Client } = require('tplink-smarthome-api');
 
 // ── Configuration ──────────────────────────────────────────────
 const TV_IP = process.env.TV_IP || '192.168.1.238';
 const SONOS_IP = process.env.SONOS_IP || '192.168.1.245';
 const SONOS_RINCON = 'RINCON_74CA606BC09101400';
+const KASA_IP = process.env.KASA_IP || '192.168.1.XXX'; // Update once plug is on network
 const ROKU_IP = process.env.ROKU_IP || '192.168.1.244';
 const ROKU_PORT = 8060; // Roku ECP (External Control Protocol)
 const PORT = process.env.PORT || 3000;
+
+// ── Kasa smart plug (TP-Link EP10) ───────────────────────────
+const kasaClient = new Client();
+let kasaPlug = null;
 
 // ── Express setup ──────────────────────────────────────────────
 const app = express();
@@ -157,6 +164,52 @@ function sonosMute(mute) {
   );
 }
 
+// ── Kasa smart plug control ───────────────────────────────────
+async function getPlug() {
+  if (kasaPlug) return kasaPlug;
+  try {
+    kasaPlug = await kasaClient.getDevice({ host: KASA_IP });
+    console.log('Connected to Kasa plug:', kasaPlug.alias);
+    return kasaPlug;
+  } catch (err) {
+    console.error('Kasa plug not reachable:', err.message);
+    return null;
+  }
+}
+
+async function plugOn() {
+  const plug = await getPlug();
+  if (!plug) throw new Error('Kasa plug not reachable');
+  console.log('Turning Sonos plug ON...');
+  await plug.setPowerState(true);
+}
+
+async function plugOff() {
+  const plug = await getPlug();
+  if (!plug) throw new Error('Kasa plug not reachable');
+  console.log('Turning Sonos plug OFF...');
+  await plug.setPowerState(false);
+}
+
+async function plugStatus() {
+  const plug = await getPlug();
+  if (!plug) return { reachable: false, state: 'unknown' };
+  const info = await plug.getSysInfo();
+  return { reachable: true, state: info.relay_state === 1 ? 'on' : 'off' };
+}
+
+// Check if Sonos is reachable by attempting a TCP connection to port 1400
+function sonosReachable() {
+  return new Promise((resolve) => {
+    const socket = new net.Socket();
+    socket.setTimeout(2000);
+    socket.on('connect', () => { socket.destroy(); resolve(true); });
+    socket.on('timeout', () => { socket.destroy(); resolve(false); });
+    socket.on('error', () => { socket.destroy(); resolve(false); });
+    socket.connect(1400, SONOS_IP);
+  });
+}
+
 // ── Roku control (stub) ───────────────────────────────────────
 // Roku ECP API: http://ROKU_IP:8060 — no auth required
 // Docs: https://developer.roku.com/docs/developer-program/dev-tools/external-control-api.md
@@ -164,24 +217,53 @@ function sonosMute(mute) {
 
 // ── API Endpoints ─────────────────────────────────────────────
 
-// Gaming Mode: stop Sonos, then switch TV to speakers
+// Gaming Mode: kill Sonos power via plug, then switch TV to speakers
 app.post('/audio/gaming', async (req, res) => {
   try {
     console.log('=== Gaming Mode ===');
-    await sonosStop();
-    await sonosMute(true);
+    const plug = await getPlug();
+    if (plug) {
+      await plugOff();
+      // Wait for CEC to release after power cut
+      await new Promise(r => setTimeout(r, 2000));
+    } else {
+      // Fallback: stop/mute Sonos via API if plug isn't available
+      await sonosStop();
+      await sonosMute(true);
+    }
     await tvRequest('ssap://audio/changeSoundOutput', { output: 'tv_speaker' });
-    res.json({ success: true, output: 'tv_speaker', sonos: 'stopped' });
+    res.json({ success: true, output: 'tv_speaker', sonos: plug ? 'powered_off' : 'stopped' });
   } catch (err) {
     console.error('Error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
 
-// Normal Mode: wake Sonos to TV input, then switch TV to ARC
+// Normal Mode: power on Sonos via plug, wait for boot, switch TV to ARC
 app.post('/audio/normal', async (req, res) => {
   try {
     console.log('=== Normal Mode ===');
+    const plug = await getPlug();
+    if (plug) {
+      await plugOn();
+      // Wait for Sonos to boot and become reachable
+      console.log('Waiting for Sonos to boot...');
+      let attempts = 0;
+      while (attempts < 30) {
+        await new Promise(r => setTimeout(r, 2000));
+        if (await sonosReachable()) {
+          console.log('Sonos is online');
+          // Extra settle time after becoming reachable
+          await new Promise(r => setTimeout(r, 3000));
+          break;
+        }
+        attempts++;
+        console.log(`Waiting for Sonos... (${attempts})`);
+      }
+      if (attempts >= 30) {
+        throw new Error('Sonos did not come online after power on');
+      }
+    }
     await sonosPlayTV();
     await sonosMute(false);
     await tvRequest('ssap://audio/changeSoundOutput', { output: 'external_arc' });
@@ -225,6 +307,22 @@ app.get('/status', async (req, res) => {
   }
 });
 
+// Kasa plug status
+app.get('/plug/status', async (req, res) => {
+  try {
+    const status = await plugStatus();
+    res.json(status);
+  } catch (err) {
+    res.json({ reachable: false, state: 'unknown', error: err.message });
+  }
+});
+
+// Sonos reachability status
+app.get('/sonos/status', async (req, res) => {
+  const reachable = await sonosReachable();
+  res.json({ reachable });
+});
+
 // Health check
 app.get('/', (req, res) => {
   res.json({ status: 'running', tvConnected });
@@ -235,6 +333,7 @@ app.listen(PORT, '0.0.0.0', () => {
   console.log(`LG TV Remote proxy server running on http://0.0.0.0:${PORT}`);
   console.log(`TV IP: ${TV_IP}`);
   console.log(`Sonos IP: ${SONOS_IP}`);
+  console.log(`Kasa plug IP: ${KASA_IP}`);
   console.log(`Roku IP: ${ROKU_IP}`);
   console.log('');
   console.log('If this is the first time connecting, accept the pairing prompt on your TV.');

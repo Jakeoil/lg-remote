@@ -10,6 +10,10 @@ const statusEl = document.getElementById('status');
 const statusText = document.getElementById('status-text');
 const gamingBtn = document.getElementById('gaming-btn');
 const normalBtn = document.getElementById('normal-btn');
+const plugDot = document.getElementById('plug-dot');
+const plugState = document.getElementById('plug-state');
+const sonosDot = document.getElementById('sonos-dot');
+const sonosState = document.getElementById('sonos-state');
 
 // Load saved server URL on page load
 serverInput.value = localStorage.getItem(STORAGE_KEY) || '';
@@ -20,6 +24,7 @@ connectBtn.addEventListener('click', () => {
   if (!url) return;
   localStorage.setItem(STORAGE_KEY, url);
   fetchStatus();
+  startPolling();
 });
 
 // Get the saved proxy server base URL
@@ -94,7 +99,54 @@ function showStatus(message, type) {
   statusEl.className = 'status ' + (type || '');
 }
 
+// Fetch device status indicators (plug + Sonos reachability)
+async function fetchDeviceStatus() {
+  const base = getBaseUrl();
+  if (!base) return;
+
+  try {
+    const [plugRes, sonosRes] = await Promise.all([
+      fetch(`${base}/plug/status`).then(r => r.json()).catch(() => null),
+      fetch(`${base}/sonos/status`).then(r => r.json()).catch(() => null)
+    ]);
+
+    // Update plug indicator
+    if (plugRes && plugRes.reachable) {
+      plugDot.className = 'dot ' + (plugRes.state === 'on' ? 'dot-on' : 'dot-off');
+      plugState.textContent = plugRes.state === 'on' ? 'On' : 'Off';
+    } else {
+      plugDot.className = 'dot dot-unknown';
+      plugState.textContent = 'N/A';
+    }
+
+    // Update Sonos indicator
+    if (sonosRes) {
+      if (sonosRes.reachable) {
+        sonosDot.className = 'dot dot-on';
+        sonosState.textContent = 'Online';
+      } else if (plugRes && plugRes.state === 'on') {
+        sonosDot.className = 'dot dot-booting';
+        sonosState.textContent = 'Booting';
+      } else {
+        sonosDot.className = 'dot dot-off';
+        sonosState.textContent = 'Offline';
+      }
+    }
+  } catch (err) {
+    // Silently fail — indicators just won't update
+  }
+}
+
+// Poll device status every 5 seconds
+let pollInterval = null;
+function startPolling() {
+  if (pollInterval) return;
+  fetchDeviceStatus();
+  pollInterval = setInterval(fetchDeviceStatus, 5000);
+}
+
 // Auto-connect on load if a server URL is saved
 if (getBaseUrl()) {
   fetchStatus();
+  startPolling();
 }

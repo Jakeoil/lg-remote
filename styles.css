@@ -101,6 +101,49 @@ body {
   border: 1px solid #ff6b6b2a;
 }
 
+/* Device status indicators */
+.device-status {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.device-indicator {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: #16213e;
+  border-radius: 8px;
+}
+
+.dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.dot-on { background: #4ade80; box-shadow: 0 0 6px #4ade8066; }
+.dot-off { background: #ef4444; box-shadow: 0 0 6px #ef444466; }
+.dot-booting { background: #facc15; box-shadow: 0 0 6px #facc1566; }
+.dot-unknown { background: #555; }
+
+.device-label {
+  font-size: 0.75rem;
+  color: #999;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+}
+
+.device-state {
+  margin-left: auto;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: #ccc;
+}
+
 /* Audio mode buttons */
 .mode-buttons {
   display: flex;
