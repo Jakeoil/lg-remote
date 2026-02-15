@@ -59,6 +59,7 @@ function connectTV() {
       console.log('Connected to LG TV');
       tvConnection = connection;
       tvConnected = true;
+      subscribeVolume(connection);
       resolve(connection);
     });
 
@@ -82,6 +83,36 @@ function connectTV() {
     }, 10000);
   });
 }
+
+// ── Volume subscription via SSE ──────────────────────────────
+let currentVolume = null;
+const sseClients = new Set();
+
+function subscribeVolume(conn) {
+  conn.subscribe('ssap://audio/getVolume', (err, res) => {
+    if (err) return console.error('Volume subscribe error:', err.message);
+    const vol = res.volumeStatus ? res.volumeStatus.volume : res.volume;
+    if (vol !== undefined) {
+      currentVolume = vol;
+      for (const client of sseClients) {
+        client.write(`data: ${JSON.stringify({ volume: vol })}\n\n`);
+      }
+    }
+  });
+}
+
+app.get('/volume/events', (req, res) => {
+  res.writeHead(200, {
+    'Content-Type': 'text/event-stream',
+    'Cache-Control': 'no-cache',
+    'Connection': 'keep-alive',
+  });
+  if (currentVolume !== null) {
+    res.write(`data: ${JSON.stringify({ volume: currentVolume })}\n\n`);
+  }
+  sseClients.add(res);
+  req.on('close', () => sseClients.delete(res));
+});
 
 // Send a request to the TV and return the response
 function tvRequest(uri, payload) {
@@ -280,7 +311,9 @@ app.post('/audio/normal', async (req, res) => {
 app.post('/volume/up', async (req, res) => {
   try {
     await tvRequest('ssap://audio/volumeUp', {});
-    res.json({ success: true });
+    const vol = await tvRequest('ssap://audio/getVolume', {});
+    const volume = vol.volumeStatus ? vol.volumeStatus.volume : vol.volume;
+    res.json({ success: true, volume });
   } catch (err) {
     console.error('Error:', err.message);
     res.status(500).json({ error: err.message });
@@ -291,7 +324,9 @@ app.post('/volume/up', async (req, res) => {
 app.post('/volume/down', async (req, res) => {
   try {
     await tvRequest('ssap://audio/volumeDown', {});
-    res.json({ success: true });
+    const vol = await tvRequest('ssap://audio/getVolume', {});
+    const volume = vol.volumeStatus ? vol.volumeStatus.volume : vol.volume;
+    res.json({ success: true, volume });
   } catch (err) {
     console.error('Error:', err.message);
     res.status(500).json({ error: err.message });

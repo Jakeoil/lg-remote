@@ -25,6 +25,7 @@ connectBtn.addEventListener('click', () => {
   localStorage.setItem(STORAGE_KEY, url);
   fetchStatus();
   startPolling();
+  subscribeVolume();
 });
 
 // Get the saved proxy server base URL
@@ -61,7 +62,10 @@ async function setMode(mode) {
 
 // Adjust volume up or down
 async function adjustVolume(direction) {
-  await sendCommand(`/volume/${direction}`);
+  const data = await sendCommand(`/volume/${direction}`);
+  if (data && data.volume !== undefined) {
+    document.getElementById('volume-level').textContent = data.volume;
+  }
 }
 
 // Fetch current audio output status from proxy server
@@ -145,8 +149,27 @@ function startPolling() {
   pollInterval = setInterval(fetchDeviceStatus, 5000);
 }
 
+// Subscribe to real-time volume updates via SSE
+let volumeSource = null;
+function subscribeVolume() {
+  const base = getBaseUrl();
+  if (!base || volumeSource) return;
+  volumeSource = new EventSource(`${base}/volume/events`);
+  volumeSource.onmessage = (event) => {
+    const data = JSON.parse(event.data);
+    if (data.volume !== undefined) {
+      document.getElementById('volume-level').textContent = data.volume;
+    }
+  };
+  volumeSource.onerror = () => {
+    volumeSource.close();
+    volumeSource = null;
+  };
+}
+
 // Auto-connect on load if a server URL is saved
 if (getBaseUrl()) {
   fetchStatus();
   startPolling();
+  subscribeVolume();
 }

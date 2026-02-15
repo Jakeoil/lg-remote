@@ -223,6 +223,15 @@ body {
 .volume-controls {
   display: flex;
   gap: 12px;
+  align-items: center;
+}
+
+.volume-level {
+  font-size: 1.8rem;
+  font-weight: 700;
+  color: #e2e8f0;
+  min-width: 48px;
+  text-align: center;
 }
 
 .btn-volume {
