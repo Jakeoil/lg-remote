@@ -60,6 +60,14 @@ async function setMode(mode) {
   btn.classList.remove('sending');
 }
 
+// Toggle Sonos plug on/off
+async function togglePlug() {
+  const current = plugState.textContent.toLowerCase();
+  const action = current === 'on' ? 'off' : 'on';
+  await sendCommand(`/plug/${action}`);
+  fetchDeviceStatus();
+}
+
 // Adjust volume up or down
 async function adjustVolume(direction) {
   const data = await sendCommand(`/volume/${direction}`);
