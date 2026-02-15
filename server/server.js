@@ -309,7 +309,25 @@ app.get('/status', async (req, res) => {
   }
 });
 
-// Kasa plug status
+// Kasa plug on/off/status
+app.post('/plug/on', async (req, res) => {
+  try {
+    await plugOn();
+    res.json({ success: true, state: 'on' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+app.post('/plug/off', async (req, res) => {
+  try {
+    await plugOff();
+    res.json({ success: true, state: 'off' });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.get('/plug/status', async (req, res) => {
   try {
     const status = await plugStatus();
