@@ -10,13 +10,14 @@ const statusEl = document.getElementById('status');
 const statusText = document.getElementById('status-text');
 const gamingBtn = document.getElementById('gaming-btn');
 const normalBtn = document.getElementById('normal-btn');
+const headphoneBtn = document.getElementById('headphone-btn');
 const plugDot = document.getElementById('plug-dot');
 const plugState = document.getElementById('plug-state');
 const sonosDot = document.getElementById('sonos-dot');
 const sonosState = document.getElementById('sonos-state');
 
 // Load saved server URL on page load
-serverInput.value = localStorage.getItem(STORAGE_KEY) || '';
+serverInput.value = localStorage.getItem(STORAGE_KEY) || 'http://192.168.1.239:3000';
 
 // Connect button handler - saves URL and fetches status
 connectBtn.addEventListener('click', () => {
@@ -89,18 +90,19 @@ async function fetchStatus() {
     const data = await res.json();
 
     // Update status text and highlight the active mode button
+    const allBtns = [gamingBtn, normalBtn, headphoneBtn];
+    allBtns.forEach(b => b.classList.remove('active'));
     if (data.output === 'tv_speaker') {
       showStatus('Current Audio: TV Speakers', 'connected');
       gamingBtn.classList.add('active');
-      normalBtn.classList.remove('active');
     } else if (data.output === 'external_arc') {
       showStatus('Current Audio: HDMI ARC / Sonos', 'connected');
       normalBtn.classList.add('active');
-      gamingBtn.classList.remove('active');
+    } else if (data.output === 'tv_external_speaker') {
+      showStatus('Current Audio: Optical / Headphones', 'connected');
+      headphoneBtn.classList.add('active');
     } else {
       showStatus(`Audio: ${data.output || 'Unknown'}`, 'connected');
-      gamingBtn.classList.remove('active');
-      normalBtn.classList.remove('active');
     }
   } catch (err) {
     showStatus(`Cannot reach server`, 'error');
@@ -177,9 +179,11 @@ function subscribeVolume() {
   };
 }
 
-// Auto-connect on load if a server URL is saved
-if (getBaseUrl()) {
-  fetchStatus();
-  startPolling();
-  subscribeVolume();
+// Auto-connect on load
+if (!localStorage.getItem(STORAGE_KEY)) {
+  localStorage.setItem(STORAGE_KEY, 'http://192.168.1.239:3000');
+  serverInput.value = 'http://192.168.1.239:3000';
 }
+fetchStatus();
+startPolling();
+subscribeVolume();

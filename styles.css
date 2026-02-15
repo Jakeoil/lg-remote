@@ -231,6 +231,23 @@ body {
   box-shadow: 0 0 30px #4ade8066;
 }
 
+/* Headphone mode button */
+.btn-headphone {
+  background: linear-gradient(135deg, #1b3a4b 0%, #0d1f2d 100%);
+  color: #7dd3fc;
+  border-color: #2a5a6f;
+}
+
+.btn-headphone:active {
+  background: linear-gradient(135deg, #2b4a5b 0%, #1d2f3d 100%);
+}
+
+.btn-headphone.active {
+  border-color: #38bdf8;
+  background: linear-gradient(135deg, #2a5a6f 0%, #1b3a4b 100%);
+  box-shadow: 0 0 30px #38bdf866;
+}
+
 /* Volume controls */
 .volume-controls {
   display: flex;

@@ -307,6 +307,28 @@ app.post('/audio/normal', async (req, res) => {
   }
 });
 
+// Headphone Mode: power off Sonos, switch TV to optical + speakers, mute speakers
+app.post('/audio/headphone', async (req, res) => {
+  try {
+    console.log('=== Headphone Mode ===');
+    const plug = await getPlug();
+    if (plug) {
+      await plugOff();
+      // Wait for CEC to release after power cut
+      await new Promise(r => setTimeout(r, 2000));
+    } else {
+      await sonosStop();
+      await sonosMute(true);
+    }
+    await tvRequest('ssap://audio/changeSoundOutput', { output: 'tv_external_speaker' });
+    await tvRequest('ssap://audio/setMute', { mute: true });
+    res.json({ success: true, output: 'tv_external_speaker', sonos: plug ? 'powered_off' : 'stopped' });
+  } catch (err) {
+    console.error('Error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Volume up
 app.post('/volume/up', async (req, res) => {
   try {
