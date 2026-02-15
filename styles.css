@@ -209,8 +209,9 @@ body {
 }
 
 .btn-gaming.active {
-  border-color: #7c5cbf;
-  box-shadow: 0 0 20px #7c5cbf33;
+  border-color: #a78bfa;
+  background: linear-gradient(135deg, #4c2da6 0%, #2d1b69 100%);
+  box-shadow: 0 0 30px #7c5cbf66;
 }
 
 /* Normal mode button */
@@ -226,7 +227,8 @@ body {
 
 .btn-normal.active {
   border-color: #4ade80;
-  box-shadow: 0 0 20px #4ade8033;
+  background: linear-gradient(135deg, #2d6a4f 0%, #1b4332 100%);
+  box-shadow: 0 0 30px #4ade8066;
 }
 
 /* Volume controls */

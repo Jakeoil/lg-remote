@@ -57,6 +57,8 @@ async function setMode(mode) {
   const btn = mode === 'gaming' ? gamingBtn : normalBtn;
   btn.classList.add('sending');
   await sendCommand(`/audio/${mode}`);
+  // TV needs a moment to finish switching audio output
+  setTimeout(fetchStatus, 1500);
   btn.classList.remove('sending');
 }
 
