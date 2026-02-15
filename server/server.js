@@ -345,7 +345,7 @@ app.get('/sonos/status', async (req, res) => {
 
 // Health check
 app.get('/', (req, res) => {
-  res.json({ status: 'running', tvConnected });
+  res.sendFile(path.join(__dirname, '..', 'index.html'));
 });
 
 // ── Start server ──────────────────────────────────────────────
