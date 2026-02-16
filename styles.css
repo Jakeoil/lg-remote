@@ -285,6 +285,27 @@ body {
   font-size: 0.95rem;
 }
 
+/* Mute button */
+.btn-mute {
+  width: 100%;
+  margin-top: 12px;
+  background: #16213e;
+  color: #94a3b8;
+  border-color: #2a3a5c;
+  padding: 12px;
+}
+
+.btn-mute:active {
+  background: #1e2d4a;
+}
+
+.btn-mute.muted {
+  background: #3b1219;
+  color: #fca5a5;
+  border-color: #7f1d1d;
+  box-shadow: 0 0 15px #ef444433;
+}
+
 /* Feedback animation for button presses */
 .btn.sending {
   opacity: 0.6;

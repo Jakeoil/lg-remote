@@ -71,6 +71,27 @@ async function togglePlug() {
   fetchDeviceStatus();
 }
 
+// Toggle mute
+async function toggleMute() {
+  await sendCommand('/volume/mute');
+}
+
+// Update mute button display
+function updateMuteDisplay(muted) {
+  const muteBtn = document.getElementById('mute-btn');
+  const muteIcon = document.getElementById('mute-icon');
+  const muteLabel = document.getElementById('mute-label');
+  if (muted) {
+    muteIcon.textContent = '🔇';
+    muteLabel.textContent = 'Unmute';
+    muteBtn.classList.add('muted');
+  } else {
+    muteIcon.textContent = '🔈';
+    muteLabel.textContent = 'Mute';
+    muteBtn.classList.remove('muted');
+  }
+}
+
 // Adjust volume up or down
 async function adjustVolume(direction) {
   const data = await sendCommand(`/volume/${direction}`);
@@ -86,8 +107,11 @@ async function fetchStatus() {
 
   try {
     const res = await fetch(`${base}/status`);
-    if (!res.ok) throw new Error(`HTTP ${res.status}`);
     const data = await res.json();
+    if (!res.ok) {
+      showStatus(data.error || `Server error (${res.status})`, 'error');
+      return;
+    }
 
     // Update status text and highlight the active mode button
     const allBtns = [gamingBtn, normalBtn, headphoneBtn];
@@ -171,6 +195,9 @@ function subscribeVolume() {
     const data = JSON.parse(event.data);
     if (data.volume !== undefined) {
       document.getElementById('volume-level').textContent = data.volume;
+    }
+    if (data.muted !== undefined) {
+      updateMuteDisplay(data.muted);
     }
   };
   volumeSource.onerror = () => {

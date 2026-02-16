@@ -86,17 +86,20 @@ function connectTV() {
 
 // ── Volume subscription via SSE ──────────────────────────────
 let currentVolume = null;
+let currentMute = false;
 const sseClients = new Set();
 
 function subscribeVolume(conn) {
   conn.subscribe('ssap://audio/getVolume', (err, res) => {
     if (err) return console.error('Volume subscribe error:', err.message);
-    const vol = res.volumeStatus ? res.volumeStatus.volume : res.volume;
-    if (vol !== undefined) {
-      currentVolume = vol;
-      for (const client of sseClients) {
-        client.write(`data: ${JSON.stringify({ volume: vol })}\n\n`);
-      }
+    const status = res.volumeStatus || res;
+    const vol = status.volume;
+    const muted = status.muteStatus;
+    if (vol !== undefined) currentVolume = vol;
+    if (muted !== undefined) currentMute = muted;
+    const msg = { volume: currentVolume, muted: currentMute };
+    for (const client of sseClients) {
+      client.write(`data: ${JSON.stringify(msg)}\n\n`);
     }
   });
 }
@@ -108,10 +111,23 @@ app.get('/volume/events', (req, res) => {
     'Connection': 'keep-alive',
   });
   if (currentVolume !== null) {
-    res.write(`data: ${JSON.stringify({ volume: currentVolume })}\n\n`);
+    res.write(`data: ${JSON.stringify({ volume: currentVolume, muted: currentMute })}\n\n`);
   }
   sseClients.add(res);
   req.on('close', () => sseClients.delete(res));
+});
+
+app.post('/volume/mute', async (req, res) => {
+  try {
+    const vol = await tvRequest('ssap://audio/getVolume', {});
+    const status = vol.volumeStatus || vol;
+    const newMute = !status.muteStatus;
+    await tvRequest('ssap://audio/setMute', { mute: newMute });
+    res.json({ success: true, muted: newMute });
+  } catch (err) {
+    console.error('Error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Send a request to the TV and return the response
@@ -254,17 +270,15 @@ function sonosReachable() {
 app.post('/audio/gaming', async (req, res) => {
   try {
     console.log('=== Gaming Mode ===');
+    // Switch TV first — if TV is off this will fail before we touch Sonos
+    await tvRequest('ssap://audio/changeSoundOutput', { output: 'tv_speaker' });
     const plug = await getPlug();
     if (plug) {
       await plugOff();
-      // Wait for CEC to release after power cut
-      await new Promise(r => setTimeout(r, 2000));
     } else {
-      // Fallback: stop/mute Sonos via API if plug isn't available
       await sonosStop();
       await sonosMute(true);
     }
-    await tvRequest('ssap://audio/changeSoundOutput', { output: 'tv_speaker' });
     res.json({ success: true, output: 'tv_speaker', sonos: plug ? 'powered_off' : 'stopped' });
   } catch (err) {
     console.error('Error:', err.message);
@@ -311,17 +325,16 @@ app.post('/audio/normal', async (req, res) => {
 app.post('/audio/headphone', async (req, res) => {
   try {
     console.log('=== Headphone Mode ===');
+    // Switch TV first — if TV is off this will fail before we touch Sonos
+    await tvRequest('ssap://audio/changeSoundOutput', { output: 'tv_external_speaker' });
+    await tvRequest('ssap://audio/setMute', { mute: true });
     const plug = await getPlug();
     if (plug) {
       await plugOff();
-      // Wait for CEC to release after power cut
-      await new Promise(r => setTimeout(r, 2000));
     } else {
       await sonosStop();
       await sonosMute(true);
     }
-    await tvRequest('ssap://audio/changeSoundOutput', { output: 'tv_external_speaker' });
-    await tvRequest('ssap://audio/setMute', { mute: true });
     res.json({ success: true, output: 'tv_external_speaker', sonos: plug ? 'powered_off' : 'stopped' });
   } catch (err) {
     console.error('Error:', err.message);
