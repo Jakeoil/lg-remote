@@ -60,22 +60,32 @@
       </button>
     </div>
 
-    <!-- Volume controls -->
-    <div class="volume-controls">
-      <button class="btn btn-volume" onclick="adjustVolume('down')">
-        <span class="btn-icon">🔉</span>
-        <span class="btn-label">Vol −</span>
+    <!-- Volume bar -->
+    <div class="volume-bar">
+      <button id="mute-btn" class="btn-mute-icon" onclick="toggleMute()">
+        <span id="mute-icon">🔊</span>
       </button>
-      <span id="volume-level" class="volume-level">--</span>
-      <button class="btn btn-volume" onclick="adjustVolume('up')">
-        <span class="btn-icon">🔊</span>
-        <span class="btn-label">Vol +</span>
-      </button>
+      <button class="btn-step" onclick="adjustVolume('down')">−</button>
+      <input type="range" id="volume-slider" class="volume-slider" min="0" max="100" value="0">
+      <button class="btn-step" onclick="adjustVolume('up')">+</button>
+      <span id="volume-level" class="volume-num">--</span>
     </div>
-    <button id="mute-btn" class="btn btn-mute" onclick="toggleMute()">
-      <span id="mute-icon" class="btn-icon">🔇</span>
-      <span id="mute-label" class="btn-label">Mute</span>
-    </button>
+
+    <!-- Output selection -->
+    <div class="output-radios" id="output-radios">
+      <label class="output-option">
+        <input type="radio" name="output" value="tv_speaker" onchange="setOutput(this.value)">
+        <span>Speakers</span>
+      </label>
+      <label class="output-option">
+        <input type="radio" name="output" value="external_arc" onchange="setOutput(this.value)">
+        <span>Sonos</span>
+      </label>
+      <label class="output-option">
+        <input type="radio" name="output" value="tv_external_speaker" onchange="setOutput(this.value)">
+        <span>Optical</span>
+      </label>
+    </div>
   </div>
 
   <script src="app.js"></script>

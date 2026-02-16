@@ -16,6 +16,9 @@ const plugState = document.getElementById('plug-state');
 const sonosDot = document.getElementById('sonos-dot');
 const sonosState = document.getElementById('sonos-state');
 
+const volumeSlider = document.getElementById('volume-slider');
+volumeSlider.addEventListener('input', (e) => onSliderInput(e.target.value));
+
 // Load saved server URL on page load
 serverInput.value = localStorage.getItem(STORAGE_KEY) || 'http://192.168.1.239:3000';
 
@@ -53,14 +56,16 @@ async function sendCommand(path) {
   }
 }
 
-// Switch audio mode (gaming = TV speakers, normal = HDMI ARC)
+// Switch audio mode (gaming = TV speakers, normal = HDMI ARC, headphone = optical)
 async function setMode(mode) {
-  const btn = mode === 'gaming' ? gamingBtn : normalBtn;
-  btn.classList.add('sending');
-  await sendCommand(`/audio/${mode}`);
+  const btnMap = { gaming: gamingBtn, normal: normalBtn, headphone: headphoneBtn };
+  const btn = btnMap[mode];
+  if (btn) btn.classList.add('sending');
+  const data = await sendCommand(`/audio/${mode}`);
+  if (data && data.muted !== undefined) updateMuteDisplay(data.muted);
   // TV needs a moment to finish switching audio output
   setTimeout(fetchStatus, 1500);
-  btn.classList.remove('sending');
+  if (btn) btn.classList.remove('sending');
 }
 
 // Toggle Sonos plug on/off
@@ -73,31 +78,74 @@ async function togglePlug() {
 
 // Toggle mute
 async function toggleMute() {
-  await sendCommand('/volume/mute');
+  const data = await sendCommand('/volume/mute');
+  if (data && data.muted !== undefined) {
+    updateMuteDisplay(data.muted);
+  }
 }
 
 // Update mute button display
 function updateMuteDisplay(muted) {
   const muteBtn = document.getElementById('mute-btn');
   const muteIcon = document.getElementById('mute-icon');
-  const muteLabel = document.getElementById('mute-label');
   if (muted) {
-    muteIcon.textContent = '🔇';
-    muteLabel.textContent = 'Unmute';
+    muteIcon.textContent = '🔊';
     muteBtn.classList.add('muted');
   } else {
-    muteIcon.textContent = '🔈';
-    muteLabel.textContent = 'Mute';
+    muteIcon.textContent = '🔊';
     muteBtn.classList.remove('muted');
   }
 }
 
-// Adjust volume up or down
+// Adjust volume up or down (step buttons)
 async function adjustVolume(direction) {
   const data = await sendCommand(`/volume/${direction}`);
   if (data && data.volume !== undefined) {
-    document.getElementById('volume-level').textContent = data.volume;
+    updateVolumeDisplay(data.volume);
   }
+}
+
+// Set volume to specific level (slider)
+let volumeDebounce = null;
+function onSliderInput(val) {
+  document.getElementById('volume-level').textContent = val;
+  clearTimeout(volumeDebounce);
+  volumeDebounce = setTimeout(() => {
+    const base = getBaseUrl();
+    if (!base) return;
+    fetch(`${base}/volume/set`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ volume: parseInt(val, 10) })
+    }).catch(() => {});
+  }, 100);
+}
+
+// Update volume display (slider + number)
+function updateVolumeDisplay(vol) {
+  document.getElementById('volume-level').textContent = vol;
+  document.getElementById('volume-slider').value = vol;
+}
+
+// Set audio output via mode endpoints
+const outputModeMap = {
+  tv_speaker: 'gaming',
+  external_arc: 'normal',
+  tv_external_speaker: 'headphone'
+};
+
+async function setOutput(value) {
+  const mode = outputModeMap[value];
+  if (!mode) return;
+  const data = await sendCommand(`/audio/${mode}`);
+  if (data && data.muted !== undefined) updateMuteDisplay(data.muted);
+  setTimeout(fetchStatus, 1500);
+}
+
+// Update output radio buttons to match current state
+function updateOutputRadio(output) {
+  const radios = document.querySelectorAll('#output-radios input[type="radio"]');
+  radios.forEach(r => { r.checked = r.value === output; });
 }
 
 // Fetch current audio output status from proxy server
@@ -113,7 +161,7 @@ async function fetchStatus() {
       return;
     }
 
-    // Update status text and highlight the active mode button
+    // Update status text, mode buttons, and output radio
     const allBtns = [gamingBtn, normalBtn, headphoneBtn];
     allBtns.forEach(b => b.classList.remove('active'));
     if (data.output === 'tv_speaker') {
@@ -128,6 +176,7 @@ async function fetchStatus() {
     } else {
       showStatus(`Audio: ${data.output || 'Unknown'}`, 'connected');
     }
+    updateOutputRadio(data.output);
   } catch (err) {
     showStatus(`Cannot reach server`, 'error');
   }
@@ -194,7 +243,7 @@ function subscribeVolume() {
   volumeSource.onmessage = (event) => {
     const data = JSON.parse(event.data);
     if (data.volume !== undefined) {
-      document.getElementById('volume-level').textContent = data.volume;
+      updateVolumeDisplay(data.volume);
     }
     if (data.muted !== undefined) {
       updateMuteDisplay(data.muted);

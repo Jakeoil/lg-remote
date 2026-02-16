@@ -130,6 +130,17 @@ app.post('/volume/mute', async (req, res) => {
   }
 });
 
+app.post('/volume/set', async (req, res) => {
+  try {
+    const vol = Math.max(0, Math.min(100, parseInt(req.body.volume, 10)));
+    await tvRequest('ssap://audio/setVolume', { volume: vol });
+    res.json({ success: true, volume: vol });
+  } catch (err) {
+    console.error('Error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Send a request to the TV and return the response
 function tvRequest(uri, payload) {
   return new Promise(async (resolve, reject) => {
@@ -327,6 +338,8 @@ app.post('/audio/headphone', async (req, res) => {
     console.log('=== Headphone Mode ===');
     // Switch TV first — if TV is off this will fail before we touch Sonos
     await tvRequest('ssap://audio/changeSoundOutput', { output: 'tv_external_speaker' });
+    // Small delay to let TV settle after output switch before muting
+    await new Promise(r => setTimeout(r, 500));
     await tvRequest('ssap://audio/setMute', { mute: true });
     const plug = await getPlug();
     if (plug) {
@@ -335,7 +348,7 @@ app.post('/audio/headphone', async (req, res) => {
       await sonosStop();
       await sonosMute(true);
     }
-    res.json({ success: true, output: 'tv_external_speaker', sonos: plug ? 'powered_off' : 'stopped' });
+    res.json({ success: true, output: 'tv_external_speaker', muted: true, sonos: plug ? 'powered_off' : 'stopped' });
   } catch (err) {
     console.error('Error:', err.message);
     res.status(500).json({ error: err.message });
