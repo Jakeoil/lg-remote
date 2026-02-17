@@ -2,6 +2,7 @@
 // Bridges HTTP requests from the webapp to the LG TV via WebSocket
 // Also controls Sonos soundbar via local UPnP/SOAP API
 
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const path = require('path');
@@ -10,13 +11,13 @@ const http = require('http');
 const net = require('net');
 const { Client } = require('tplink-smarthome-api');
 
-// ── Configuration ──────────────────────────────────────────────
-const TV_IP = process.env.TV_IP || '192.168.1.238';
-const SONOS_IP = process.env.SONOS_IP || '192.168.1.245';
-const SONOS_RINCON = 'RINCON_74CA606BC09101400';
-const KASA_IP = process.env.KASA_IP || '192.168.1.246';
-const ROKU_IP = process.env.ROKU_IP || '192.168.1.244';
-const ROKU_PORT = 8060; // Roku ECP (External Control Protocol)
+// ── Configuration (set in .env file) ─────────────────────────
+const TV_IP = process.env.TV_IP;
+const SONOS_IP = process.env.SONOS_IP;
+const SONOS_RINCON = process.env.SONOS_RINCON;
+const KASA_IP = process.env.KASA_IP;
+const ROKU_IP = process.env.ROKU_IP;
+const ROKU_PORT = 8060;
 const PORT = process.env.PORT || 3000;
 
 // ── Kasa smart plug (TP-Link EP10) ───────────────────────────
