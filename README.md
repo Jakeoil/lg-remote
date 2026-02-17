@@ -63,15 +63,37 @@ Backup URL: **https://jakeoil.github.io/lg-remote**
 
 ### 5. Mac Proxy Server (Backup)
 
-If the Pi is unavailable, you can run the proxy server on a Mac:
+If the Pi is unavailable, the Mac can run the server. Install dependencies first:
 
 ```bash
-cd server
-npm install
-TV_IP=192.168.1.238 node server.js
+cd server && npm install
 ```
 
-Find your Mac's IP: `ipconfig getifaddr en0`
+**Option A: Run manually**
+
+```bash
+node server.js
+```
+
+**Option B: Auto-start on login (launch agent)**
+
+Install:
+```bash
+./mac-install.sh
+```
+
+Uninstall:
+```bash
+./mac-uninstall.sh
+```
+
+Check status and logs:
+```bash
+launchctl list | grep lg-remote
+tail -f /tmp/lg-remote.log
+```
+
+The Mac server is at `http://192.168.1.235:3000`.
 
 ### 6. Use the Remote
 
