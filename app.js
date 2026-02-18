@@ -57,10 +57,12 @@ async function sendCommand(path) {
 }
 
 // Switch audio mode (gaming = TV speakers, normal = HDMI ARC, headphone = optical)
+const modeLabels = { gaming: 'TV Speakers', normal: 'Sonos / ARC', headphone: 'Optical' };
 async function setMode(mode) {
   const btnMap = { gaming: gamingBtn, normal: normalBtn, headphone: headphoneBtn };
   const btn = btnMap[mode];
   if (btn) btn.classList.add('sending');
+  showStatus(`Switching to ${modeLabels[mode] || mode}...`, 'connected');
   const data = await sendCommand(`/audio/${mode}`);
   if (data && data.muted !== undefined) updateMuteDisplay(data.muted);
   // TV needs a moment to finish switching audio output
@@ -137,6 +139,7 @@ const outputModeMap = {
 async function setOutput(value) {
   const mode = outputModeMap[value];
   if (!mode) return;
+  showStatus(`Switching to ${modeLabels[mode] || mode}...`, 'connected');
   const data = await sendCommand(`/audio/${mode}`);
   if (data && data.muted !== undefined) updateMuteDisplay(data.muted);
   setTimeout(fetchStatus, 1500);
