@@ -258,6 +258,32 @@ function subscribeVolume() {
   };
 }
 
+// Wake TV via Wake-on-LAN
+async function wakeTv() {
+  const base = getBaseUrl();
+  if (!base) {
+    showStatus('Set server URL first', 'error');
+    return;
+  }
+  const btn = document.getElementById('power-btn');
+  btn.classList.add('waking');
+  showStatus('Waking TV...', 'connected');
+  try {
+    const res = await fetch(`${base}/tv/wake`, { method: 'POST' });
+    const data = await res.json();
+    if (data.success) {
+      showStatus('TV is awake!', 'connected');
+      fetchStatus();
+      subscribeVolume();
+    } else {
+      showStatus(data.message || data.error || 'Wake failed', 'error');
+    }
+  } catch (err) {
+    showStatus(`Wake error: ${err.message}`, 'error');
+  }
+  btn.classList.remove('waking');
+}
+
 // Auto-connect on load
 const PI_URL = 'http://192.168.1.239:3000';
 const MAC_URL = 'http://192.168.1.235:3000';

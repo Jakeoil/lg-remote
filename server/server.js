@@ -10,13 +10,16 @@ const lgtv = require('lgtv2');
 const http = require('http');
 const net = require('net');
 const { Client } = require('tplink-smarthome-api');
+const wol = require('wake_on_lan');
+const { discoverDevices } = require('./discover');
 
-// ── Configuration (set in .env file) ─────────────────────────
-const TV_IP = process.env.TV_IP;
-const SONOS_IP = process.env.SONOS_IP;
-const SONOS_RINCON = process.env.SONOS_RINCON;
-const KASA_IP = process.env.KASA_IP;
-const ROKU_IP = process.env.ROKU_IP;
+// ── Configuration (from .env, overridden by discovery) ───────
+let TV_IP = process.env.TV_IP;
+let TV_MAC = process.env.TV_MAC || null;
+let SONOS_IP = process.env.SONOS_IP;
+let SONOS_RINCON = process.env.SONOS_RINCON;
+let KASA_IP = process.env.KASA_IP;
+let ROKU_IP = process.env.ROKU_IP;
 const ROKU_PORT = 8060;
 const PORT = process.env.PORT || 3000;
 
@@ -427,18 +430,117 @@ app.get('/sonos/status', async (req, res) => {
   res.json({ reachable });
 });
 
+// ── Discovery endpoint ────────────────────────────────────────
+function applyDiscovery(results) {
+  if (results.tv) {
+    if (!process.env.TV_IP) TV_IP = results.tv.ip;
+    if (results.tv.mac && !process.env.TV_MAC) TV_MAC = results.tv.mac;
+    console.log(`  TV: ${TV_IP}${TV_IP === results.tv.ip ? ' (discovered)' : ' (from .env)'}`);
+  }
+  if (results.sonos) {
+    if (!process.env.SONOS_IP) SONOS_IP = results.sonos.ip;
+    if (results.sonos.rincon && !process.env.SONOS_RINCON) SONOS_RINCON = results.sonos.rincon;
+    console.log(`  Sonos: ${SONOS_IP}${SONOS_IP === results.sonos.ip ? ' (discovered)' : ' (from .env)'}`);
+  }
+  if (results.roku) {
+    if (!process.env.ROKU_IP) ROKU_IP = results.roku.ip;
+    console.log(`  Roku: ${ROKU_IP}${ROKU_IP === results.roku.ip ? ' (discovered)' : ' (from .env)'}`);
+  }
+  if (results.kasa) {
+    if (!process.env.KASA_IP) KASA_IP = results.kasa.ip;
+    // Reset cached plug so it reconnects with new IP
+    kasaPlug = null;
+    console.log(`  Kasa: ${KASA_IP}${KASA_IP === results.kasa.ip ? ' (discovered)' : ' (from .env)'}`);
+  }
+}
+
+app.get('/discover', async (req, res) => {
+  try {
+    const results = await discoverDevices();
+    applyDiscovery(results);
+    res.json({
+      discovered: results,
+      active: { tv: TV_IP, tvMac: TV_MAC, sonos: SONOS_IP, sonosRincon: SONOS_RINCON, kasa: KASA_IP, roku: ROKU_IP }
+    });
+  } catch (err) {
+    console.error('Discovery error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Wake-on-LAN ──────────────────────────────────────────────
+app.post('/tv/wake', async (req, res) => {
+  if (!TV_MAC) {
+    return res.status(400).json({ error: 'TV MAC address not known. Run discovery first or set TV_MAC in .env' });
+  }
+
+  console.log(`Sending WoL magic packet to ${TV_MAC}...`);
+  try {
+    await new Promise((resolve, reject) => {
+      wol.wake(TV_MAC, (err) => {
+        if (err) return reject(err);
+        resolve();
+      });
+    });
+
+    // Poll TV port 3001 until it responds (up to 30 seconds)
+    console.log('Waiting for TV to wake up...');
+    let awake = false;
+    for (let i = 0; i < 15; i++) {
+      await new Promise(r => setTimeout(r, 2000));
+      const reachable = await new Promise((resolve) => {
+        const socket = new net.Socket();
+        socket.setTimeout(2000);
+        socket.on('connect', () => { socket.destroy(); resolve(true); });
+        socket.on('timeout', () => { socket.destroy(); resolve(false); });
+        socket.on('error', () => { socket.destroy(); resolve(false); });
+        socket.connect(3001, TV_IP);
+      });
+      if (reachable) {
+        awake = true;
+        console.log('TV is awake!');
+        break;
+      }
+      console.log(`Waiting for TV... (${i + 1})`);
+    }
+
+    if (awake) {
+      res.json({ success: true, message: 'TV is awake' });
+    } else {
+      res.json({ success: false, message: 'WoL sent but TV did not respond within 30 seconds' });
+    }
+  } catch (err) {
+    console.error('WoL error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 // Health check
 app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, '..', 'index.html'));
 });
 
 // ── Start server ──────────────────────────────────────────────
-app.listen(PORT, '0.0.0.0', () => {
-  console.log(`LG TV Remote proxy server running on http://0.0.0.0:${PORT}`);
-  console.log(`TV IP: ${TV_IP}`);
-  console.log(`Sonos IP: ${SONOS_IP}`);
-  console.log(`Kasa plug IP: ${KASA_IP}`);
-  console.log(`Roku IP: ${ROKU_IP}`);
-  console.log('');
-  console.log('If this is the first time connecting, accept the pairing prompt on your TV.');
-});
+async function start() {
+  // Run discovery before starting (best-effort, don't block on failure)
+  try {
+    const results = await discoverDevices();
+    applyDiscovery(results);
+  } catch (err) {
+    console.error('Discovery failed, using .env values:', err.message);
+  }
+
+  app.listen(PORT, '0.0.0.0', () => {
+    console.log('');
+    console.log(`LG TV Remote proxy server running on http://0.0.0.0:${PORT}`);
+    console.log(`TV IP: ${TV_IP || 'not configured'}`);
+    console.log(`TV MAC: ${TV_MAC || 'not known'}`);
+    console.log(`Sonos IP: ${SONOS_IP || 'not configured'}`);
+    console.log(`Kasa plug IP: ${KASA_IP || 'not configured'}`);
+    console.log(`Roku IP: ${ROKU_IP || 'not configured'}`);
+    console.log('');
+    console.log('If this is the first time connecting, accept the pairing prompt on your TV.');
+  });
+}
+
+start();
