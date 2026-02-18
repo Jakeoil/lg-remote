@@ -20,7 +20,7 @@ const volumeSlider = document.getElementById('volume-slider');
 volumeSlider.addEventListener('input', (e) => onSliderInput(e.target.value));
 
 // Load saved server URL on page load
-serverInput.value = localStorage.getItem(STORAGE_KEY) || 'http://192.168.1.239:3000';
+serverInput.value = localStorage.getItem(STORAGE_KEY) || '';
 
 // Connect button handler - saves URL and fetches status
 connectBtn.addEventListener('click', () => {
@@ -160,9 +160,16 @@ async function fetchStatus() {
     const res = await fetch(`${base}/status`);
     const data = await res.json();
     if (!res.ok) {
-      showStatus(data.error || `Server error (${res.status})`, 'error');
+      // Server returned error — TV is likely off
+      if (!powerBusy) updatePowerButton(false);
+      const allBtns = [gamingBtn, normalBtn, headphoneBtn];
+      allBtns.forEach(b => b.classList.remove('active'));
+      showStatus('TV is off', 'connected');
       return;
     }
+
+    // Status succeeded — TV is on
+    if (!powerBusy) updatePowerButton(true);
 
     // Update status text, mode buttons, and output radio
     const allBtns = [gamingBtn, normalBtn, headphoneBtn];
@@ -258,47 +265,74 @@ function subscribeVolume() {
   };
 }
 
-// Wake TV via Wake-on-LAN
-async function wakeTv() {
+// TV power toggle
+let tvOn = false;
+let powerBusy = false;
+
+function updatePowerButton(on) {
+  tvOn = on;
+  const btn = document.getElementById('power-btn');
+  btn.classList.toggle('on', on);
+  btn.classList.toggle('off', !on);
+}
+
+async function toggleTvPower() {
   const base = getBaseUrl();
   if (!base) {
     showStatus('Set server URL first', 'error');
     return;
   }
+  if (powerBusy) return; // prevent double-clicks
+  powerBusy = true;
   const btn = document.getElementById('power-btn');
   btn.classList.add('waking');
-  showStatus('Waking TV...', 'connected');
-  try {
-    const res = await fetch(`${base}/tv/wake`, { method: 'POST' });
-    const data = await res.json();
-    if (data.success) {
-      showStatus('TV is awake!', 'connected');
+
+  if (tvOn) {
+    showStatus('Turning off TV...', 'connected');
+    try {
+      const res = await fetch(`${base}/tv/off`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        showStatus('TV is off', 'connected');
+        updatePowerButton(false);
+      } else {
+        showStatus(data.error || 'Failed', 'error');
+      }
+    } catch (err) {
+      showStatus(`Error: ${err.message}`, 'error');
+    }
+  } else {
+    showStatus('Waking TV...', 'connected');
+    try {
+      const res = await fetch(`${base}/tv/wake`, { method: 'POST' });
+      const data = await res.json();
+      if (data.success) {
+        showStatus('TV is awake!', 'connected');
+      } else {
+        showStatus('WoL sent — waiting for TV...', 'connected');
+      }
+      // WoL was sent either way — check actual state
+      updatePowerButton(true);
       fetchStatus();
       subscribeVolume();
-    } else {
-      showStatus(data.message || data.error || 'Wake failed', 'error');
+    } catch (err) {
+      showStatus(`Wake error: ${err.message}`, 'error');
     }
-  } catch (err) {
-    showStatus(`Wake error: ${err.message}`, 'error');
   }
   btn.classList.remove('waking');
+  powerBusy = false;
 }
 
 // Auto-connect on load
-const PI_URL = 'http://192.168.1.239:3000';
-const MAC_URL = 'http://192.168.1.235:3000';
 const isLocal = window.location.origin.includes('192.168.1.');
 
 if (isLocal) {
-  // Served from Pi — hardcode server, hide settings
-  localStorage.setItem(STORAGE_KEY, PI_URL);
+  // Served locally — use same host as server, hide settings
+  localStorage.setItem(STORAGE_KEY, window.location.origin);
   document.querySelector('.settings').style.display = 'none';
 } else {
-  // Served from GitHub Pages — use Mac as default server
-  if (!localStorage.getItem(STORAGE_KEY)) {
-    localStorage.setItem(STORAGE_KEY, MAC_URL);
-  }
-  serverInput.value = localStorage.getItem(STORAGE_KEY);
+  // Served from GitHub Pages — prompt for server URL
+  serverInput.value = localStorage.getItem(STORAGE_KEY) || '';
 }
 fetchStatus();
 startPolling();

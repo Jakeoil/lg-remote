@@ -20,7 +20,6 @@ let SONOS_IP = process.env.SONOS_IP;
 let SONOS_RINCON = process.env.SONOS_RINCON;
 let KASA_IP = process.env.KASA_IP;
 let ROKU_IP = process.env.ROKU_IP;
-const ROKU_PORT = 8060;
 const PORT = process.env.PORT || 3000;
 
 // ── Kasa smart plug (TP-Link EP10) ───────────────────────────
@@ -468,7 +467,23 @@ app.get('/discover', async (req, res) => {
   }
 });
 
-// ── Wake-on-LAN ──────────────────────────────────────────────
+// ── TV power control ─────────────────────────────────────────
+app.get('/tv/status', async (req, res) => {
+  res.json({ reachable: tvConnected });
+});
+
+app.post('/tv/off', async (req, res) => {
+  try {
+    await tvRequest('ssap://system/turnOff', {});
+    tvConnected = false;
+    tvConnection = null;
+    res.json({ success: true, message: 'TV is off' });
+  } catch (err) {
+    console.error('TV off error:', err.message);
+    res.status(500).json({ error: err.message });
+  }
+});
+
 app.post('/tv/wake', async (req, res) => {
   if (!TV_MAC) {
     return res.status(400).json({ error: 'TV MAC address not known. Run discovery first or set TV_MAC in .env' });
@@ -483,10 +498,10 @@ app.post('/tv/wake', async (req, res) => {
       });
     });
 
-    // Poll TV port 3001 until it responds (up to 30 seconds)
+    // Poll TV port 3001 until it responds (up to 60 seconds)
     console.log('Waiting for TV to wake up...');
     let awake = false;
-    for (let i = 0; i < 15; i++) {
+    for (let i = 0; i < 30; i++) {
       await new Promise(r => setTimeout(r, 2000));
       const reachable = await new Promise((resolve) => {
         const socket = new net.Socket();
@@ -505,9 +520,11 @@ app.post('/tv/wake', async (req, res) => {
     }
 
     if (awake) {
+      // Establish WebSocket connection so tvConnected becomes true
+      connectTV().catch(() => {});
       res.json({ success: true, message: 'TV is awake' });
     } else {
-      res.json({ success: false, message: 'WoL sent but TV did not respond within 30 seconds' });
+      res.json({ success: false, message: 'WoL sent but TV did not respond within 60 seconds' });
     }
   } catch (err) {
     console.error('WoL error:', err.message);

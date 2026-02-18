@@ -48,7 +48,6 @@ body {
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #ef4444;
   cursor: pointer;
   transition: all 0.2s;
 }
@@ -56,6 +55,16 @@ body {
 .btn-power:active {
   background: #1e2d4a;
   transform: scale(0.93);
+}
+
+.btn-power.off {
+  color: #ef4444;
+  border-color: #ef444466;
+}
+
+.btn-power.on {
+  color: #4ade80;
+  border-color: #4ade8066;
 }
 
 .btn-power.waking {

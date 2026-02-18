@@ -43,15 +43,7 @@ function discoverMdns(results) {
       if (name.includes('lg') || model.includes('oled') || model.includes('lg')) {
         const ip = service.addresses && service.addresses.find(a => a.includes('.'));
         if (ip && !results.tv) {
-          // Extract MAC from service id field (format: UUID with MAC embedded)
-          let mac = null;
-          const id = txt.id;
-          if (id) {
-            // Google Cast id is often a hex string; try to extract MAC-like pattern
-            const macMatch = id.match(/([0-9a-f]{2}[:-]){5}[0-9a-f]{2}/i);
-            if (macMatch) mac = macMatch[0];
-          }
-          results.tv = { ip, mac, source: 'mdns', name: service.name };
+          results.tv = { ip, mac: null, source: 'mdns', name: service.name };
           console.log(`  Found LG TV: ${ip} (${service.name})`);
         }
       }
