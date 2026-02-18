@@ -97,18 +97,24 @@ The Mac server is at `http://192.168.1.235:3000`.
 
 ### 6. Use the Remote
 
-**Primary (Raspberry Pi):**
+**Primary — Raspberry Pi (http://192.168.1.239:3000):**
 
 1. Open **http://192.168.1.239:3000** on your phone or computer
-2. The page auto-connects — no setup needed
+2. The page auto-connects to the Pi server — no setup needed
 3. Use the buttons to switch audio modes, adjust volume, or toggle the Sonos power
 4. The TV must be on for audio mode commands to work
 
-**Fallback (GitHub Pages + Mac proxy):**
+The Pi runs 24/7 and auto-starts the server on boot. This is the recommended way to use the remote.
+
+**Fallback — GitHub Pages (https://jakeoil.github.io/lg-remote):**
+
+If the Pi is down, the frontend is also hosted on GitHub Pages. Since GitHub Pages can't reach your local network, you need a proxy server running on your Mac (or the Pi):
 
 1. Open **https://jakeoil.github.io/lg-remote** on your phone
-2. Enter your Mac's proxy server URL (e.g. `http://192.168.1.235:3000`)
-3. Tap **Connect**
+2. Enter the proxy server URL (e.g. `http://192.168.1.235:3000` for Mac, or `http://192.168.1.239:3000` for Pi)
+3. Tap **Connect** — the URL is saved for next time
+
+**How auto-connect works:** When the page is served from a local network address (Pi or Mac), it automatically uses that server — no URL entry needed. When served from GitHub Pages, you must enter the server URL once and it's remembered in your browser.
 
 ### 7. Add to Phone Home Screen
 

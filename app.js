@@ -259,18 +259,20 @@ function subscribeVolume() {
 }
 
 // Auto-connect on load
-// If served from the Pi or Mac server, use same origin. Otherwise use saved URL.
-if (!localStorage.getItem(STORAGE_KEY)) {
-  const origin = window.location.origin;
-  if (origin.includes('192.168.1.')) {
-    // Served from local network (Pi or Mac) — use same origin
-    localStorage.setItem(STORAGE_KEY, origin);
-    serverInput.value = origin;
-  } else {
-    // Served from GitHub Pages or elsewhere — prompt user to enter server address
-    serverInput.value = '';
-    serverInput.placeholder = 'Enter server IP:port';
+const PI_URL = 'http://192.168.1.239:3000';
+const MAC_URL = 'http://192.168.1.235:3000';
+const isLocal = window.location.origin.includes('192.168.1.');
+
+if (isLocal) {
+  // Served from Pi — hardcode server, hide settings
+  localStorage.setItem(STORAGE_KEY, PI_URL);
+  document.querySelector('.settings').style.display = 'none';
+} else {
+  // Served from GitHub Pages — use Mac as default server
+  if (!localStorage.getItem(STORAGE_KEY)) {
+    localStorage.setItem(STORAGE_KEY, MAC_URL);
   }
+  serverInput.value = localStorage.getItem(STORAGE_KEY);
 }
 fetchStatus();
 startPolling();
