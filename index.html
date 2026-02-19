@@ -12,6 +12,7 @@
 <body>
   <div class="container">
     <div class="title-bar">
+      <span id="poll-light" class="poll-light"></span>
       <h1 class="title">LG TV Remote</h1>
       <button id="power-btn" class="btn-power off" onclick="toggleTvPower()">
         <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
@@ -70,6 +71,7 @@
 
     <!-- Volume bar -->
     <div class="volume-bar">
+      <span class="volume-label">TV</span>
       <button id="mute-btn" class="btn-mute-icon" onclick="toggleMute()">
         <span id="mute-icon">🔊</span>
       </button>
@@ -77,6 +79,16 @@
       <input type="range" id="volume-slider" class="volume-slider" min="0" max="100" value="0">
       <button class="btn-step" onclick="adjustVolume('up')">+</button>
       <span id="volume-level" class="volume-num">--</span>
+    </div>
+
+    <!-- Sonos volume bar (visible only in Normal/ARC mode) -->
+    <div class="volume-bar" id="sonos-volume-bar" style="display:none">
+      <span class="volume-label">Sonos</span>
+      <div class="btn-mute-icon-placeholder"></div>
+      <button class="btn-step" onclick="adjustSonosVolume(-1)">−</button>
+      <input type="range" id="sonos-slider" class="volume-slider sonos-slider" min="0" max="100" value="0" oninput="onSonosSliderInput(this.value)">
+      <button class="btn-step" onclick="adjustSonosVolume(1)">+</button>
+      <span id="sonos-volume-level" class="volume-num">--</span>
     </div>
 
     <!-- Output selection -->

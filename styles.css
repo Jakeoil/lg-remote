@@ -328,6 +328,31 @@ body {
   margin-bottom: 12px;
 }
 
+.volume-label {
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  min-width: 34px;
+  text-align: center;
+  flex-shrink: 0;
+}
+
+.btn-mute-icon-placeholder {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+}
+
+.sonos-slider::-webkit-slider-thumb {
+  background: #f97316;
+}
+
+.sonos-slider::-moz-range-thumb {
+  background: #f97316;
+}
+
 .btn-mute-icon {
   background: none;
   border: 2px solid #2a3a5c;

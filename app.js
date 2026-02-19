@@ -145,6 +145,60 @@ async function setOutput(value) {
   setTimeout(fetchStatus, 1500);
 }
 
+// Fetch and display current Sonos volume
+async function fetchSonosVolume() {
+  const base = getBaseUrl();
+  if (!base) return;
+  try {
+    const res = await fetch(`${base}/sonos/volume`);
+    const data = await res.json();
+    if (data.volume !== undefined) updateSonosVolumeDisplay(data.volume);
+  } catch (err) {
+    // silently fail
+  }
+}
+
+function updateSonosVolumeDisplay(vol) {
+  document.getElementById('sonos-volume-level').textContent = vol;
+  document.getElementById('sonos-slider').value = vol;
+}
+
+// Set Sonos volume via slider input (debounced)
+let sonosDebounce = null;
+function onSonosSliderInput(val) {
+  document.getElementById('sonos-volume-level').textContent = val;
+  clearTimeout(sonosDebounce);
+  sonosDebounce = setTimeout(() => {
+    const base = getBaseUrl();
+    if (!base) return;
+    fetch(`${base}/sonos/volume`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ volume: parseInt(val, 10) })
+    }).catch(() => {});
+  }, 100);
+}
+
+// Adjust Sonos volume by step (+1 or -1)
+async function adjustSonosVolume(delta) {
+  const slider = document.getElementById('sonos-slider');
+  const current = parseInt(slider.value, 10) || 0;
+  const next = Math.max(0, Math.min(100, current + delta));
+  const base = getBaseUrl();
+  if (!base) return;
+  try {
+    const res = await fetch(`${base}/sonos/volume`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ volume: next })
+    });
+    const data = await res.json();
+    if (data.volume !== undefined) updateSonosVolumeDisplay(data.volume);
+  } catch (err) {
+    // silently fail
+  }
+}
+
 // Update output radio buttons to match current state
 function updateOutputRadio(output) {
   const radios = document.querySelectorAll('#output-radios input[type="radio"]');
@@ -166,6 +220,14 @@ function updateAudioOutput(output) {
     headphoneBtn.classList.add('active');
   }
   updateOutputRadio(output);
+
+  const sonosBar = document.getElementById('sonos-volume-bar');
+  if (output === 'external_arc') {
+    sonosBar.style.display = '';
+    fetchSonosVolume();
+  } else {
+    sonosBar.style.display = 'none';
+  }
 }
 
 // Fetch current audio output status from proxy server

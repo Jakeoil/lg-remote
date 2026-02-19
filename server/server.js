@@ -182,7 +182,8 @@ function sonosRequest(endpoint, service, action, body) {
       method: 'POST',
       headers: {
         'Content-Type': 'text/xml; charset="utf-8"',
-        'SOAPAction': `"urn:schemas-upnp-org:service:${service}:1#${action}"`
+        'SOAPAction': `"urn:schemas-upnp-org:service:${service}:1#${action}"`,
+        'Content-Length': Buffer.byteLength(xml)
       }
     };
 
@@ -430,6 +431,37 @@ app.get('/plug/status', async (req, res) => {
 app.get('/sonos/status', async (req, res) => {
   const reachable = await sonosReachable();
   res.json({ reachable });
+});
+
+// Sonos volume get
+app.get('/sonos/volume', async (req, res) => {
+  try {
+    const xml = await sonosRequest(
+      '/MediaRenderer/RenderingControl/Control',
+      'RenderingControl', 'GetVolume',
+      '<InstanceID>0</InstanceID><Channel>Master</Channel>'
+    );
+    const match = xml.match(/<CurrentVolume>(\d+)<\/CurrentVolume>/);
+    const volume = match ? parseInt(match[1], 10) : null;
+    res.json({ volume });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Sonos volume set
+app.post('/sonos/volume', async (req, res) => {
+  try {
+    const vol = Math.max(0, Math.min(100, parseInt(req.body.volume, 10)));
+    await sonosRequest(
+      '/MediaRenderer/RenderingControl/Control',
+      'RenderingControl', 'SetVolume',
+      `<InstanceID>0</InstanceID><Channel>Master</Channel><DesiredVolume>${vol}</DesiredVolume>`
+    );
+    res.json({ success: true, volume: vol });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // ── Discovery endpoint ────────────────────────────────────────
