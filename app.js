@@ -151,6 +151,23 @@ function updateOutputRadio(output) {
   radios.forEach(r => { r.checked = r.value === output; });
 }
 
+// Update mode buttons, radio, and status from an output value
+function updateAudioOutput(output) {
+  const allBtns = [gamingBtn, normalBtn, headphoneBtn];
+  allBtns.forEach(b => b.classList.remove('active'));
+  if (output === 'tv_speaker') {
+    showStatus('Current Audio: TV Speakers', 'connected');
+    gamingBtn.classList.add('active');
+  } else if (output === 'external_arc') {
+    showStatus('Current Audio: HDMI ARC / Sonos', 'connected');
+    normalBtn.classList.add('active');
+  } else if (output === 'tv_external_speaker') {
+    showStatus('Current Audio: Optical / Headphones', 'connected');
+    headphoneBtn.classList.add('active');
+  }
+  updateOutputRadio(output);
+}
+
 // Fetch current audio output status from proxy server
 async function fetchStatus() {
   const base = getBaseUrl();
@@ -160,7 +177,7 @@ async function fetchStatus() {
     const res = await fetch(`${base}/status`);
     const data = await res.json();
     if (!res.ok) {
-      // Server returned error — TV is likely off
+      flashPollLight(false);
       if (!powerBusy) updatePowerButton(false);
       const allBtns = [gamingBtn, normalBtn, headphoneBtn];
       allBtns.forEach(b => b.classList.remove('active'));
@@ -168,26 +185,11 @@ async function fetchStatus() {
       return;
     }
 
-    // Status succeeded — TV is on
+    flashPollLight(true);
     if (!powerBusy) updatePowerButton(true);
-
-    // Update status text, mode buttons, and output radio
-    const allBtns = [gamingBtn, normalBtn, headphoneBtn];
-    allBtns.forEach(b => b.classList.remove('active'));
-    if (data.output === 'tv_speaker') {
-      showStatus('Current Audio: TV Speakers', 'connected');
-      gamingBtn.classList.add('active');
-    } else if (data.output === 'external_arc') {
-      showStatus('Current Audio: HDMI ARC / Sonos', 'connected');
-      normalBtn.classList.add('active');
-    } else if (data.output === 'tv_external_speaker') {
-      showStatus('Current Audio: Optical / Headphones', 'connected');
-      headphoneBtn.classList.add('active');
-    } else {
-      showStatus(`Audio: ${data.output || 'Unknown'}`, 'connected');
-    }
-    updateOutputRadio(data.output);
+    updateAudioOutput(data.output);
   } catch (err) {
+    flashPollLight(false);
     showStatus(`Cannot reach server`, 'error');
   }
 }
@@ -236,12 +238,25 @@ async function fetchDeviceStatus() {
   }
 }
 
-// Poll device status every 5 seconds
+// Flash poll light green on success, red on failure
+function flashPollLight(success) {
+  const light = document.getElementById('poll-light');
+  light.classList.remove('active', 'error');
+  void light.offsetWidth; // force reflow to restart transition
+  light.classList.add(success ? 'active' : 'error');
+  setTimeout(() => light.classList.remove('active', 'error'), 600);
+}
+
+// Poll device and TV status every 5 seconds
 let pollInterval = null;
 function startPolling() {
   if (pollInterval) return;
   fetchDeviceStatus();
-  pollInterval = setInterval(fetchDeviceStatus, 5000);
+  fetchStatus();
+  pollInterval = setInterval(() => {
+    fetchDeviceStatus();
+    fetchStatus();
+  }, 5000);
 }
 
 // Subscribe to real-time volume updates via SSE
@@ -252,12 +267,9 @@ function subscribeVolume() {
   volumeSource = new EventSource(`${base}/volume/events`);
   volumeSource.onmessage = (event) => {
     const data = JSON.parse(event.data);
-    if (data.volume !== undefined) {
-      updateVolumeDisplay(data.volume);
-    }
-    if (data.muted !== undefined) {
-      updateMuteDisplay(data.muted);
-    }
+    if (data.volume !== undefined) updateVolumeDisplay(data.volume);
+    if (data.muted !== undefined) updateMuteDisplay(data.muted);
+    if (data.output !== undefined) updateAudioOutput(data.output);
   };
   volumeSource.onerror = () => {
     volumeSource.close();
@@ -320,7 +332,8 @@ async function toggleTvPower() {
     }
   }
   btn.classList.remove('waking');
-  powerBusy = false;
+  // Hold powerBusy for 10s to prevent poll from overriding state during TV transition
+  setTimeout(() => { powerBusy = false; }, 10000);
 }
 
 // Auto-connect on load

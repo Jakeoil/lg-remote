@@ -90,6 +90,7 @@ function connectTV() {
 // ── Volume subscription via SSE ──────────────────────────────
 let currentVolume = null;
 let currentMute = false;
+let currentOutput = null;
 const sseClients = new Set();
 
 function subscribeVolume(conn) {
@@ -98,9 +99,11 @@ function subscribeVolume(conn) {
     const status = res.volumeStatus || res;
     const vol = status.volume;
     const muted = status.muteStatus;
+    const output = status.soundOutput;
     if (vol !== undefined) currentVolume = vol;
     if (muted !== undefined) currentMute = muted;
-    const msg = { volume: currentVolume, muted: currentMute };
+    if (output !== undefined) currentOutput = output;
+    const msg = { volume: currentVolume, muted: currentMute, output: currentOutput };
     for (const client of sseClients) {
       client.write(`data: ${JSON.stringify(msg)}\n\n`);
     }
