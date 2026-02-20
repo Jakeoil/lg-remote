@@ -1,0 +1,148 @@
+/* channels.css — styles specific to the channels page */
+
+.back-link {
+  font-size: 0.85rem;
+  color: #64748b;
+  text-decoration: none;
+  flex-shrink: 0;
+}
+
+.back-link:hover {
+  color: #94a3b8;
+}
+
+.section-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  letter-spacing: 1px;
+  text-transform: uppercase;
+  color: #475569;
+  margin: 14px 0 8px 2px;
+}
+
+/* Channel tile grid */
+.ch-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px;
+  margin-bottom: 4px;
+}
+
+.ch-tile {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border: 2px solid transparent;
+  border-radius: 14px;
+  padding: 14px 8px;
+  cursor: pointer;
+  transition: all 0.15s;
+  -webkit-user-select: none;
+  user-select: none;
+  gap: 4px;
+}
+
+.ch-tile:active {
+  transform: scale(0.95);
+  filter: brightness(1.2);
+}
+
+.ch-net {
+  font-size: 1.1rem;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.ch-num {
+  font-size: 0.72rem;
+  opacity: 0.75;
+  font-weight: 500;
+}
+
+/* Network brand colors */
+.ch-tile.nbc {
+  background: linear-gradient(135deg, #003087 0%, #001a5c 100%);
+  color: #60a5fa;
+  border-color: #1d4ed8;
+}
+
+.ch-tile.cbs {
+  background: linear-gradient(135deg, #1a3a8f 0%, #0d1f5c 100%);
+  color: #93c5fd;
+  border-color: #1e40af;
+}
+
+.ch-tile.abc {
+  background: linear-gradient(135deg, #1e1e2e 0%, #0f0f1a 100%);
+  color: #e2e8f0;
+  border-color: #3f3f5c;
+}
+
+.ch-tile.pbs {
+  background: linear-gradient(135deg, #14427a 0%, #0a2447 100%);
+  color: #7dd3fc;
+  border-color: #1e6aa8;
+}
+
+.ch-tile.metv {
+  background: linear-gradient(135deg, #6b1414 0%, #3d0a0a 100%);
+  color: #fca5a5;
+  border-color: #991b1b;
+}
+
+.ch-tile.netflix {
+  background: linear-gradient(135deg, #b91c1c 0%, #7f1d1d 100%);
+  color: #fecaca;
+  border-color: #dc2626;
+}
+
+.ch-tile.max {
+  background: linear-gradient(135deg, #002be7 0%, #001580 100%);
+  color: #bfdbfe;
+  border-color: #1d4ed8;
+}
+
+/* Channel entry row */
+.ch-entry {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.ch-input {
+  flex: 1;
+  background: #1e2d4a;
+  border: 1px solid #2a3a5c;
+  border-radius: 10px;
+  color: #e2e8f0;
+  font-size: 1.1rem;
+  padding: 10px 14px;
+  outline: none;
+  -webkit-appearance: none;
+}
+
+.ch-input::placeholder {
+  color: #475569;
+}
+
+.ch-input:focus {
+  border-color: #4a90d9;
+}
+
+.ch-go {
+  background: #1e3a5c;
+  border: 1px solid #2a5a8c;
+  border-radius: 10px;
+  color: #7dd3fc;
+  font-size: 1rem;
+  font-weight: 700;
+  padding: 10px 20px;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.ch-go:active {
+  background: #2a4a6c;
+}

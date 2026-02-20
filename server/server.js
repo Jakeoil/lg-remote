@@ -629,6 +629,8 @@ async function start() {
     console.error('Discovery failed, using .env values:', err.message);
   }
 
+  app.use('/channels', require('./channels')(tvRequest));
+
   app.listen(PORT, '0.0.0.0', () => {
     console.log('');
     console.log(`LG TV Remote proxy server running on http://0.0.0.0:${PORT}`);

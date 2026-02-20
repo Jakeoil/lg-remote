@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#1a1a2e">
+  <title>Channels</title>
+  <link rel="icon" type="image/png" href="favicon.ico">
+  <link rel="stylesheet" href="styles.css">
+  <link rel="stylesheet" href="channels.css">
+</head>
+<body>
+  <div class="container">
+
+    <!-- Title bar -->
+    <div class="title-bar">
+      <a href="/" class="back-link">← Remote</a>
+      <span class="title-text">Channels</span>
+      <button id="power-btn" class="btn-power off" onclick="toggleTvPower()">⏻</button>
+    </div>
+
+    <!-- Sonos volume bar -->
+    <div class="volume-bar" id="sonos-volume-bar">
+      <span class="volume-label"><svg class="brand-icon" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M12.988 12.36l-2.813-2.634v4.429h.837V11.7l2.813 2.633V9.905h-.837zM6.464 9.665A2.3 2.3 0 0 0 4.13 12c0 1.257 1.077 2.334 2.334 2.334A2.3 2.3 0 0 0 8.798 12a2.3 2.3 0 0 0-2.334-2.334m0 3.83A1.482 1.482 0 0 1 4.968 12c0-.838.658-1.496 1.496-1.496S7.96 11.162 7.96 12s-.658 1.496-1.496 1.496M2.694 12c-.24-.18-.54-.3-.958-.419-.838-.24-.838-.479-.838-.598 0-.24.299-.48.718-.48.36 0 .658.18.778.24l.06.06.658-.479-.06-.06s-.538-.598-1.436-.598c-.419 0-.838.12-1.137.359-.3.24-.479.598-.479.958s.18.718.479.957c.24.18.538.3.957.42.838.239.838.478.838.598 0 .239-.299.478-.718.478-.359 0-.658-.18-.778-.239l-.06-.06-.658.479.06.06s.538.598 1.436.598c.42 0 .838-.12 1.137-.359.3-.24.48-.598.48-.957 0-.36-.18-.659-.48-.958m14.843-2.334A2.3 2.3 0 0 0 15.202 12a2.337 2.337 0 0 0 2.334 2.334A2.3 2.3 0 0 0 19.87 12a2.337 2.337 0 0 0-2.334-2.334m0 3.83A1.482 1.482 0 0 1 16.04 12c0-.838.658-1.496 1.496-1.496s1.496.658 1.496 1.496-.718 1.496-1.496 1.496m3.77-1.556c.24.18.54.3.958.42.838.239.838.478.838.598 0 .239-.299.478-.718.478-.36 0-.658-.18-.778-.239h-.06l-.658.479.06.06s.538.598 1.436.598c.419 0 .838-.12 1.137-.359s.479-.598.479-.958-.18-.718-.479-.957c-.24-.18-.538-.3-.957-.42-.838-.239-.838-.478-.838-.598 0-.239.299-.478.718-.478.359 0 .658.18.778.239l.06.06.658-.479-.06-.06s-.538-.598-1.436-.598c-.42 0-.838.12-1.137.359-.3.24-.48.598-.48.957-.059.36.12.659.48.898"/></svg></span>
+      <button id="sonos-mute-btn" class="btn-mute-icon" onclick="toggleSonosMute()">
+        <span id="sonos-mute-icon">🔊</span>
+      </button>
+      <button class="btn-step" onclick="adjustSonosVolume(-1)">−</button>
+      <input type="range" id="sonos-slider" class="volume-slider sonos-slider" min="0" max="100" value="0" oninput="onSonosSliderInput(this.value)">
+      <button class="btn-step" onclick="adjustSonosVolume(1)">+</button>
+      <span id="sonos-volume-level" class="volume-num">--</span>
+    </div>
+
+    <!-- On Air -->
+    <div class="section-label">On Air</div>
+    <div class="ch-grid">
+      <button class="ch-tile nbc"    onclick="tuneChannel('5.1')"><span class="ch-net">NBC</span><span class="ch-num">5.1</span></button>
+      <button class="ch-tile cbs"    onclick="tuneChannel('12.1')"><span class="ch-net">CBS</span><span class="ch-num">12.1</span></button>
+      <button class="ch-tile abc"    onclick="tuneChannel('25.1')"><span class="ch-net">ABC</span><span class="ch-num">25.1</span></button>
+      <button class="ch-tile pbs"    onclick="tuneChannel('2.1')"><span class="ch-net">PBS</span><span class="ch-num">2.1</span></button>
+      <button class="ch-tile metv"   onclick="tuneChannel('25.5')"><span class="ch-net">MeTV</span><span class="ch-num">25.5</span></button>
+    </div>
+
+    <!-- Streaming -->
+    <div class="section-label">Streaming</div>
+    <div class="ch-grid">
+      <button class="ch-tile netflix"  onclick="launchApp('netflix')"><span class="ch-net">Netflix</span></button>
+      <button class="ch-tile max"      onclick="launchApp('com.wbd.stream')"><span class="ch-net">Max</span></button>
+    </div>
+
+    <!-- Channel entry -->
+    <div class="section-label">Channel</div>
+    <div class="ch-entry">
+      <input type="text" id="ch-input" class="ch-input" inputmode="decimal" placeholder="e.g. 7.1" maxlength="6">
+      <button class="ch-go" onclick="goChannel()">Go</button>
+    </div>
+
+  </div>
+  <script src="channels-app.js"></script>
+</body>
+</html>
