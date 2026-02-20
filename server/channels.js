@@ -3,7 +3,7 @@
 const express = require('express');
 const WebSocket = require('ws');
 
-const VALID_KEYS = new Set(['UP','DOWN','LEFT','RIGHT','ENTER','BACK','HOME','MENU','EXIT']);
+const VALID_KEYS = new Set(['UP','DOWN','LEFT','RIGHT','ENTER','BACK','HOME','MENU','EXIT','GUIDE']);
 
 // Cached pointer input socket
 let inputSocket = null;

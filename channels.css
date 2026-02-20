@@ -142,7 +142,8 @@
 .dpad-ok    { grid-column: 2; background: #1e3a5c; color: #7dd3fc; font-size: 0.95rem; }
 .dpad-right { grid-column: 3; }
 .dpad-down  { grid-column: 2; }
-.dpad-back  { grid-column: 1 / span 3; height: 40px; font-size: 0.85rem; color: #64748b; }
+.dpad-back  { grid-column: 1 / span 2; height: 40px; font-size: 0.85rem; color: #64748b; }
+.dpad-guide { grid-column: 3; height: 40px; font-size: 0.85rem; color: #7dd3fc; border-color: #2a5a8c; }
 
 /* Channel entry row */
 .ch-entry {
