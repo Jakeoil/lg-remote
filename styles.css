@@ -478,6 +478,12 @@ body {
 
 /* Feedback animation for button presses */
 .btn.sending {
-  opacity: 0.6;
+  opacity: 0.5;
   pointer-events: none;
+  animation: pulse-sending 1s ease-in-out infinite;
+}
+
+@keyframes pulse-sending {
+  0%, 100% { opacity: 0.5; }
+  50%       { opacity: 1; }
 }
