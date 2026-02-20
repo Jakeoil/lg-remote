@@ -16,10 +16,7 @@ async function getInputSocket(tvRequest) {
   const socketPath = result.socketPath;
   return new Promise((resolve, reject) => {
     const ws = new WebSocket(socketPath, { rejectUnauthorized: false });
-    ws.on('open', () => {
-      inputSocket = ws;
-      resolve(ws);
-    });
+    ws.on('open', () => { inputSocket = ws; resolve(ws); });
     ws.on('close', () => { inputSocket = null; });
     ws.on('error', (err) => { inputSocket = null; reject(err); });
     setTimeout(() => reject(new Error('Input socket timeout')), 5000);
@@ -81,7 +78,7 @@ module.exports = function(tvRequest) {
         return res.status(400).json({ error: `Invalid key. Valid: ${[...VALID_KEYS].join(', ')}` });
       }
       const ws = await getInputSocket(tvRequest);
-      ws.send(JSON.stringify({ type: 'button', name: key }));
+      ws.send(`type:button\nname:${key}\n\n`);
       res.json({ success: true, key });
     } catch (err) {
       res.status(500).json({ error: err.message });
