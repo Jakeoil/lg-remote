@@ -140,14 +140,14 @@ function updateSonosMuteDisplay(muted) {
 
 // ── Channel / app actions ─────────────────────────────────────────
 
-async function tuneChannel(channel) {
+async function tuneChannel(channelId) {
   const base = getBaseUrl();
   if (!base) return;
   try {
     await fetch(`${base}/channels/tune`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ channel })
+      body: JSON.stringify({ channelId })
     });
   } catch (e) {}
 }
@@ -165,8 +165,17 @@ async function launchApp(id) {
 }
 
 function goChannel() {
-  const val = document.getElementById('ch-input').value.trim();
-  if (val) tuneChannel(val);
+  // Accept "5.1" or "5-1" format, convert to channelNumber for lookup
+  const val = document.getElementById('ch-input').value.trim().replace('.', '-');
+  if (!val) return;
+  const base = getBaseUrl();
+  if (!base) return;
+  // Use channelNumber format directly — server will pass to openChannel
+  fetch(`${base}/channels/tune`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ channelId: val })
+  }).catch(() => {});
 }
 
 // Allow Enter key in channel input

@@ -5,6 +5,16 @@ const express = require('express');
 module.exports = function(tvRequest) {
   const router = express.Router();
 
+  // List TV channels (for discovery)
+  router.get('/list', async (req, res) => {
+    try {
+      const result = await tvRequest('ssap://tv/getChannelList', {});
+      res.json(result.channelList || result);
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
+
   // List all installed launch points (for discovery)
   router.get('/apps', async (req, res) => {
     try {
@@ -27,13 +37,13 @@ module.exports = function(tvRequest) {
     }
   });
 
-  // Tune to an OTA channel number (e.g. "7.1")
+  // Tune to an OTA channel by signalChannelId
   router.post('/tune', async (req, res) => {
     try {
-      const { channel } = req.body;
-      if (!channel) return res.status(400).json({ error: 'Missing channel' });
-      await tvRequest('ssap://tv/openChannel', { channelNumber: String(channel) });
-      res.json({ success: true, channel });
+      const { channelId } = req.body;
+      if (!channelId) return res.status(400).json({ error: 'Missing channelId' });
+      await tvRequest('ssap://tv/openChannel', { channelId });
+      res.json({ success: true, channelId });
     } catch (err) {
       res.status(500).json({ error: err.message });
     }
