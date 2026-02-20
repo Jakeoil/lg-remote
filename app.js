@@ -434,10 +434,17 @@ async function toggleTvPower() {
 }
 
 // Auto-connect on load
-const isLocal = window.location.origin.includes('192.168.1.');
+function isLocalNetwork() {
+  const host = window.location.hostname;
+  return host === 'localhost' ||
+         host.endsWith('.local') ||
+         /^192\.168\./.test(host) ||
+         /^10\./.test(host) ||
+         /^172\.(1[6-9]|2[0-9]|3[01])\./.test(host);
+}
 
-if (isLocal) {
-  // Served locally — use same host as server, hide settings
+if (isLocalNetwork()) {
+  // Served from the Pi — use same origin (lx200pi.local:3000 or IP), hide settings
   localStorage.setItem(STORAGE_KEY, window.location.origin);
   document.querySelector('.settings').style.display = 'none';
 } else {
