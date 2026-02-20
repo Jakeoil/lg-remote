@@ -331,14 +331,17 @@ body {
 }
 
 .volume-label {
-  font-size: 0.7rem;
-  font-weight: 600;
-  color: #64748b;
-  text-transform: uppercase;
-  letter-spacing: 0.5px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   min-width: 34px;
-  text-align: center;
   flex-shrink: 0;
+}
+
+.brand-icon {
+  width: 22px;
+  height: 22px;
+  fill: #64748b;
 }
 
 .btn-mute-icon-placeholder {
