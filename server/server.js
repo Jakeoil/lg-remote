@@ -341,9 +341,13 @@ app.post('/audio/normal', async (req, res) => {
         throw new Error('Sonos did not come online after power on');
       }
     }
-    await sonosPlayTV();
-    await sonosMute(false);
+    console.log('Switching TV to ARC...');
     await tvRequest('ssap://audio/changeSoundOutput', { output: 'external_arc' });
+    console.log('ARC switch command sent, calling sonosPlayTV...');
+    await sonosPlayTV();
+    console.log('sonosPlayTV done, unmuting...');
+    await sonosMute(false);
+    console.log('Unmuted, done');
     res.json({ success: true, output: 'external_arc', sonos: 'playing' });
   } catch (err) {
     console.error('Error:', err.message);
@@ -443,6 +447,37 @@ app.get('/plug/status', async (req, res) => {
 app.get('/sonos/status', async (req, res) => {
   const reachable = await sonosReachable();
   res.json({ reachable });
+});
+
+// Sonos mute get
+app.get('/sonos/mute', async (req, res) => {
+  try {
+    const xml = await sonosRequest(
+      '/MediaRenderer/RenderingControl/Control',
+      'RenderingControl', 'GetMute',
+      '<InstanceID>0</InstanceID><Channel>Master</Channel>'
+    );
+    const match = xml.match(/<CurrentMute>(\d)<\/CurrentMute>/);
+    const muted = match ? match[1] === '1' : null;
+    res.json({ muted });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Sonos mute toggle
+app.post('/sonos/mute', async (req, res) => {
+  try {
+    const muted = req.body.muted;
+    await sonosRequest(
+      '/MediaRenderer/RenderingControl/Control',
+      'RenderingControl', 'SetMute',
+      `<InstanceID>0</InstanceID><Channel>Master</Channel><DesiredMute>${muted ? 1 : 0}</DesiredMute>`
+    );
+    res.json({ success: true, muted });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Sonos volume get

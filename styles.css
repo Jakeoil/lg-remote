@@ -339,15 +339,9 @@ body {
 }
 
 .brand-icon {
-  width: 22px;
-  height: 22px;
+  width: 18px;
+  height: 18px;
   fill: #64748b;
-}
-
-.btn-mute-icon-placeholder {
-  width: 44px;
-  height: 44px;
-  flex-shrink: 0;
 }
 
 .sonos-slider::-webkit-slider-thumb {
@@ -358,12 +352,17 @@ body {
   background: #f97316;
 }
 
+.volume-bar.ghosted {
+  opacity: 0.3;
+  pointer-events: none;
+}
+
 .btn-mute-icon {
   background: none;
   border: 2px solid #2a3a5c;
   border-radius: 8px;
-  padding: 8px;
-  font-size: 1.3rem;
+  padding: 4px 6px;
+  font-size: 1.1rem;
   cursor: pointer;
   line-height: 1;
   flex-shrink: 0;
@@ -398,10 +397,10 @@ body {
   border: 1px solid #2a3a5c;
   border-radius: 8px;
   color: #94a3b8;
-  font-size: 1.2rem;
+  font-size: 1.1rem;
   font-weight: 700;
-  width: 36px;
-  height: 36px;
+  width: 30px;
+  height: 30px;
   cursor: pointer;
   flex-shrink: 0;
   display: flex;
@@ -445,10 +444,10 @@ body {
 }
 
 .volume-num {
-  font-size: 1rem;
+  font-size: 0.9rem;
   font-weight: 700;
   color: #e2e8f0;
-  min-width: 30px;
+  min-width: 26px;
   text-align: right;
   flex-shrink: 0;
 }

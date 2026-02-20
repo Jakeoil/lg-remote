@@ -145,14 +145,17 @@ async function setOutput(value) {
   setTimeout(fetchStatus, 1500);
 }
 
-// Fetch and display current Sonos volume
+// Fetch and display current Sonos volume and mute state
 async function fetchSonosVolume() {
   const base = getBaseUrl();
   if (!base) return;
   try {
-    const res = await fetch(`${base}/sonos/volume`);
-    const data = await res.json();
-    if (data.volume !== undefined) updateSonosVolumeDisplay(data.volume);
+    const [volRes, muteRes] = await Promise.all([
+      fetch(`${base}/sonos/volume`).then(r => r.json()),
+      fetch(`${base}/sonos/mute`).then(r => r.json())
+    ]);
+    if (volRes.volume !== undefined) updateSonosVolumeDisplay(volRes.volume);
+    if (muteRes.muted !== null && muteRes.muted !== undefined) updateSonosMuteDisplay(muteRes.muted);
   } catch (err) {
     // silently fail
   }
@@ -161,6 +164,34 @@ async function fetchSonosVolume() {
 function updateSonosVolumeDisplay(vol) {
   document.getElementById('sonos-volume-level').textContent = vol;
   document.getElementById('sonos-slider').value = vol;
+}
+
+// Toggle Sonos mute
+async function toggleSonosMute() {
+  const btn = document.getElementById('sonos-mute-btn');
+  const muted = !btn.classList.contains('muted');
+  const base = getBaseUrl();
+  if (!base) return;
+  try {
+    const res = await fetch(`${base}/sonos/mute`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ muted })
+    });
+    const data = await res.json();
+    if (data.muted !== undefined) updateSonosMuteDisplay(data.muted);
+  } catch (err) {
+    // silently fail
+  }
+}
+
+function updateSonosMuteDisplay(muted) {
+  const btn = document.getElementById('sonos-mute-btn');
+  if (muted) {
+    btn.classList.add('muted');
+  } else {
+    btn.classList.remove('muted');
+  }
 }
 
 // Set Sonos volume via slider input (debounced)
@@ -282,17 +313,21 @@ async function fetchDeviceStatus() {
       plugState.textContent = 'N/A';
     }
 
-    // Update Sonos indicator
+    // Update Sonos indicator and ghost Sonos volume bar if not reachable
     if (sonosRes) {
+      const sonosBar = document.getElementById('sonos-volume-bar');
       if (sonosRes.reachable) {
         sonosDot.className = 'dot dot-on';
         sonosState.textContent = 'Online';
+        sonosBar.classList.remove('ghosted');
       } else if (plugRes && plugRes.state === 'on') {
         sonosDot.className = 'dot dot-booting';
         sonosState.textContent = 'Booting';
+        sonosBar.classList.add('ghosted');
       } else {
         sonosDot.className = 'dot dot-off';
         sonosState.textContent = 'Offline';
+        sonosBar.classList.add('ghosted');
       }
     }
   } catch (err) {
