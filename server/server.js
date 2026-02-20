@@ -35,20 +35,26 @@ app.use(express.static(path.join(__dirname, '..')));  // serve frontend files
 // ── LG TV connection ──────────────────────────────────────────
 let tvConnection = null;
 let tvConnected = false;
+let tvConnecting = null; // pending Promise while connect is in progress
 
 // Connect to the TV. The lgtv2 library handles pairing automatically -
 // on first connection, an "accept" prompt appears on the TV screen.
 // The client key is saved to ~/.lgtv2/client-key for future connections.
 function connectTV() {
-  return new Promise((resolve, reject) => {
-    // If already connected, reuse
-    if (tvConnection && tvConnected) {
-      return resolve(tvConnection);
-    }
+  // If already connected, reuse
+  if (tvConnection && tvConnected) {
+    return Promise.resolve(tvConnection);
+  }
+  // If a connection attempt is already in progress, wait for it
+  if (tvConnecting) {
+    return tvConnecting;
+  }
 
-    console.log(`Connecting to LG TV at ${TV_IP}...`);
+  console.log(`Connecting to LG TV at ${TV_IP}...`);
+  tvConnecting = new Promise((resolve, reject) => {
     const connection = lgtv({
       url: `wss://${TV_IP}:3001`,
+      reconnect: false,
       wsconfig: {
         tlsOptions: {
           rejectUnauthorized: false,
@@ -62,6 +68,7 @@ function connectTV() {
       console.log('Connected to LG TV');
       tvConnection = connection;
       tvConnected = true;
+      tvConnecting = null;
       subscribeVolume(connection);
       resolve(connection);
     });
@@ -69,6 +76,7 @@ function connectTV() {
     connection.on('error', (err) => {
       console.error('TV connection error:', err.message);
       tvConnected = false;
+      tvConnecting = null;
       reject(err);
     });
 
@@ -76,15 +84,19 @@ function connectTV() {
       console.log('TV connection closed');
       tvConnected = false;
       tvConnection = null;
+      tvConnecting = null;
     });
 
     // Timeout if the TV doesn't respond (e.g. TV is off)
     setTimeout(() => {
       if (!tvConnected) {
+        tvConnecting = null;
         reject(new Error('Connection timed out - is the TV on?'));
       }
     }, 10000);
   });
+
+  return tvConnecting;
 }
 
 // ── Volume subscription via SSE ──────────────────────────────
