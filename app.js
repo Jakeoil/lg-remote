@@ -254,10 +254,10 @@ function updateAudioOutput(output) {
 
   const sonosBar = document.getElementById('sonos-volume-bar');
   if (output === 'external_arc') {
-    sonosBar.style.display = '';
+    sonosBar.classList.remove('ghosted');
     fetchSonosVolume();
   } else {
-    sonosBar.style.display = 'none';
+    sonosBar.classList.add('ghosted');
   }
 }
 
