@@ -129,7 +129,7 @@ app.get('/volume/events', (req, res) => {
     'Connection': 'keep-alive',
   });
   if (currentVolume !== null) {
-    res.write(`data: ${JSON.stringify({ volume: currentVolume, muted: currentMute })}\n\n`);
+    res.write(`data: ${JSON.stringify({ volume: currentVolume, muted: currentMute, output: currentOutput })}\n\n`);
   }
   sseClients.add(res);
   req.on('close', () => sseClients.delete(res));
@@ -381,12 +381,21 @@ app.post('/audio/headphone', async (req, res) => {
 // Volume up
 app.post('/volume/up', async (req, res) => {
   try {
-    await tvRequest('ssap://audio/volumeUp', {});
-    const vol = await tvRequest('ssap://audio/getVolume', {});
-    const volume = vol.volumeStatus ? vol.volumeStatus.volume : vol.volume;
-    res.json({ success: true, volume });
+    if (currentOutput === 'external_arc') {
+      const xml = await sonosRequest('/MediaRenderer/RenderingControl/Control', 'RenderingControl', 'GetVolume', '<InstanceID>0</InstanceID><Channel>Master</Channel>');
+      const match = xml.match(/<CurrentVolume>(\d+)<\/CurrentVolume>/);
+      const current = match ? parseInt(match[1], 10) : 0;
+      const volume = Math.min(100, current + 1);
+      await sonosRequest('/MediaRenderer/RenderingControl/Control', 'RenderingControl', 'SetVolume', `<InstanceID>0</InstanceID><Channel>Master</Channel><DesiredVolume>${volume}</DesiredVolume>`);
+      res.json({ success: true, volume });
+    } else {
+      await tvRequest('ssap://audio/volumeUp', {});
+      const vol = await tvRequest('ssap://audio/getVolume', {});
+      const volume = vol.volumeStatus ? vol.volumeStatus.volume : vol.volume;
+      res.json({ success: true, volume });
+    }
   } catch (err) {
-    console.error('Error:', err.message);
+    console.error('volumeUp error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
@@ -394,12 +403,21 @@ app.post('/volume/up', async (req, res) => {
 // Volume down
 app.post('/volume/down', async (req, res) => {
   try {
-    await tvRequest('ssap://audio/volumeDown', {});
-    const vol = await tvRequest('ssap://audio/getVolume', {});
-    const volume = vol.volumeStatus ? vol.volumeStatus.volume : vol.volume;
-    res.json({ success: true, volume });
+    if (currentOutput === 'external_arc') {
+      const xml = await sonosRequest('/MediaRenderer/RenderingControl/Control', 'RenderingControl', 'GetVolume', '<InstanceID>0</InstanceID><Channel>Master</Channel>');
+      const match = xml.match(/<CurrentVolume>(\d+)<\/CurrentVolume>/);
+      const current = match ? parseInt(match[1], 10) : 0;
+      const volume = Math.max(0, current - 1);
+      await sonosRequest('/MediaRenderer/RenderingControl/Control', 'RenderingControl', 'SetVolume', `<InstanceID>0</InstanceID><Channel>Master</Channel><DesiredVolume>${volume}</DesiredVolume>`);
+      res.json({ success: true, volume });
+    } else {
+      await tvRequest('ssap://audio/volumeDown', {});
+      const vol = await tvRequest('ssap://audio/getVolume', {});
+      const volume = vol.volumeStatus ? vol.volumeStatus.volume : vol.volume;
+      res.json({ success: true, volume });
+    }
   } catch (err) {
-    console.error('Error:', err.message);
+    console.error('volumeDown error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
