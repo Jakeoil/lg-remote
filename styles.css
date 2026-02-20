@@ -278,9 +278,11 @@ body {
 }
 
 .btn-gaming.active {
-  border-color: #a78bfa;
-  background: linear-gradient(135deg, #4c2da6 0%, #2d1b69 100%);
-  box-shadow: 0 0 30px #7c5cbf66;
+  border-color: #c4b5fd;
+  border-width: 2px;
+  background: linear-gradient(135deg, #7c3aed 0%, #4c1d95 100%);
+  color: #ffffff;
+  box-shadow: 0 0 20px #7c3aedaa, 0 2px 8px #0008;
 }
 
 /* Normal mode button */
