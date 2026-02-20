@@ -103,6 +103,47 @@
   border-color: #1d4ed8;
 }
 
+/* D-pad navigation */
+.dpad {
+  display: grid;
+  grid-template-columns: 1fr 1fr 1fr;
+  grid-template-rows: auto auto;
+  gap: 8px;
+  margin-bottom: 4px;
+  max-width: 220px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.dpad-btn {
+  background: #1e2d4a;
+  border: 1px solid #2a3a5c;
+  border-radius: 12px;
+  color: #94a3b8;
+  font-size: 1rem;
+  font-weight: 700;
+  height: 52px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  -webkit-user-select: none;
+  user-select: none;
+  transition: background 0.1s;
+}
+
+.dpad-btn:active {
+  background: #2a4a6c;
+  color: #e2e8f0;
+}
+
+.dpad-up    { grid-column: 2; }
+.dpad-left  { grid-column: 1; }
+.dpad-ok    { grid-column: 2; background: #1e3a5c; color: #7dd3fc; font-size: 0.95rem; }
+.dpad-right { grid-column: 3; }
+.dpad-down  { grid-column: 2; }
+.dpad-back  { grid-column: 1 / span 3; height: 40px; font-size: 0.85rem; color: #64748b; }
+
 /* Channel entry row */
 .ch-entry {
   display: flex;

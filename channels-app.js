@@ -164,6 +164,18 @@ async function launchApp(id) {
   } catch (e) {}
 }
 
+async function sendKey(key) {
+  const base = getBaseUrl();
+  if (!base) return;
+  try {
+    await fetch(`${base}/channels/key`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ key })
+    });
+  } catch (e) {}
+}
+
 function goChannel() {
   // Accept "5.1" or "5-1" format, convert to channelNumber for lookup
   const val = document.getElementById('ch-input').value.trim().replace('.', '-');
