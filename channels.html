@@ -7,6 +7,7 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#1a1a2e">
   <title>Channels</title>
+  <link rel="manifest" href="manifest.json">
   <link rel="icon" type="image/png" href="favicon.ico">
   <link rel="stylesheet" href="styles.css">
   <link rel="stylesheet" href="channels.css">
@@ -16,9 +17,13 @@
 
     <!-- Title bar -->
     <div class="title-bar">
-      <a href="/" class="back-link">← Remote</a>
-      <span class="title-text">Channels</span>
-      <button id="power-btn" class="btn-power off" onclick="toggleTvPower()">⏻</button>
+      <h1 class="title">Channels</h1>
+      <button id="power-btn" class="btn-power off" onclick="toggleTvPower()">
+        <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+          <path d="M12 2v8"/>
+          <path d="M18.36 6.64A9 9 0 1 1 5.64 6.64"/>
+        </svg>
+      </button>
     </div>
 
     <!-- Sonos volume bar -->
@@ -42,6 +47,11 @@
       <button class="ch-tile pbs"    onclick="tuneChannel('1_29_2_1_0_0_0')"><span class="ch-net">PBS</span><span class="ch-num">2.1</span></button>
       <button class="ch-tile metv"   onclick="tuneChannel('1_16_25_5_0_0_0')"><span class="ch-net">MeTV</span><span class="ch-num">25.5</span></button>
     </div>
+    <div class="ch-entry">
+      <button class="ch-go ch-guide" onclick="sendKey('GUIDE')">Guide</button>
+      <input type="text" id="ch-input" class="ch-input" inputmode="decimal" placeholder="e.g. 7.1" maxlength="6">
+      <button class="ch-go" onclick="goChannel()">Go</button>
+    </div>
 
     <!-- Streaming -->
     <div class="section-label">Streaming</div>
@@ -59,14 +69,6 @@
       <button class="dpad-btn dpad-right" onclick="sendKey('RIGHT')">▶</button>
       <button class="dpad-btn dpad-down"  onclick="sendKey('DOWN')">▼</button>
       <button class="dpad-btn dpad-back"  onclick="sendKey('BACK')">Back</button>
-      <button class="dpad-btn dpad-guide" onclick="sendKey('GUIDE')">Guide</button>
-    </div>
-
-    <!-- Channel entry -->
-    <div class="section-label">Channel</div>
-    <div class="ch-entry">
-      <input type="text" id="ch-input" class="ch-input" inputmode="decimal" placeholder="e.g. 7.1" maxlength="6">
-      <button class="ch-go" onclick="goChannel()">Go</button>
     </div>
 
   </div>

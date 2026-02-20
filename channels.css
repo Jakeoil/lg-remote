@@ -1,5 +1,29 @@
 /* channels.css — styles specific to the channels page */
 
+* {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+input {
+  -webkit-user-select: text;
+  user-select: text;
+}
+
+/* Compact container/shared overrides for channels page */
+.container {
+  padding: 16px 16px;
+}
+
+.title-bar {
+  margin-bottom: 12px;
+}
+
+.volume-bar {
+  padding: 8px;
+  margin-bottom: 8px;
+}
+
 .back-link {
   font-size: 0.85rem;
   color: #64748b;
@@ -17,7 +41,7 @@
   letter-spacing: 1px;
   text-transform: uppercase;
   color: #475569;
-  margin: 14px 0 8px 2px;
+  margin: 10px 0 5px 2px;
 }
 
 /* Channel tile grid */
@@ -35,7 +59,7 @@
   justify-content: center;
   border: 2px solid transparent;
   border-radius: 14px;
-  padding: 14px 8px;
+  padding: 10px 8px;
   cursor: pointer;
   transition: all 0.15s;
   -webkit-user-select: none;
@@ -122,7 +146,7 @@
   color: #94a3b8;
   font-size: 1rem;
   font-weight: 700;
-  height: 52px;
+  height: 46px;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -142,25 +166,32 @@
 .dpad-ok    { grid-column: 2; background: #1e3a5c; color: #7dd3fc; font-size: 0.95rem; }
 .dpad-right { grid-column: 3; }
 .dpad-down  { grid-column: 2; }
-.dpad-back  { grid-column: 1 / span 2; height: 40px; font-size: 0.85rem; color: #64748b; }
-.dpad-guide { grid-column: 3; height: 40px; font-size: 0.85rem; color: #7dd3fc; border-color: #2a5a8c; }
+.dpad-back  { grid-column: 1 / span 3; height: 36px; font-size: 0.85rem; color: #64748b; }
+
+.ch-guide {
+  padding: 10px 12px;
+  color: #7dd3fc;
+  border-color: #2a5a8c;
+}
 
 /* Channel entry row */
 .ch-entry {
   display: flex;
-  gap: 10px;
+  gap: 8px;
   align-items: center;
-  margin-bottom: 20px;
+  margin-top: 8px;
+  margin-bottom: 12px;
 }
 
 .ch-input {
   flex: 1;
+  min-width: 0;
   background: #1e2d4a;
   border: 1px solid #2a3a5c;
   border-radius: 10px;
   color: #e2e8f0;
-  font-size: 1.1rem;
-  padding: 10px 14px;
+  font-size: 1rem;
+  padding: 10px 8px;
   outline: none;
   -webkit-appearance: none;
 }
@@ -180,7 +211,7 @@
   color: #7dd3fc;
   font-size: 1rem;
   font-weight: 700;
-  padding: 10px 20px;
+  padding: 10px 14px;
   cursor: pointer;
   flex-shrink: 0;
 }
