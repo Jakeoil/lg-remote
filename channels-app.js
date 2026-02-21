@@ -140,9 +140,10 @@ function updateSonosMuteDisplay(muted) {
 
 // ── Channel / app actions ─────────────────────────────────────────
 
-async function tuneChannel(channelId) {
+async function tuneChannel(channelId, displayVal) {
   const base = getBaseUrl();
   if (!base) return;
+  if (displayVal) document.getElementById('ch-input').value = displayVal;
   try {
     await fetch(`${base}/channels/tune`, {
       method: 'POST',
@@ -150,6 +151,19 @@ async function tuneChannel(channelId) {
       body: JSON.stringify({ channelId })
     });
   } catch (e) {}
+}
+
+function subchannelUp() {
+  const input = document.getElementById('ch-input');
+  const val = input.value.trim();
+  if (!val) return;
+  const dot = val.lastIndexOf('.');
+  if (dot === -1) return;
+  const major = val.slice(0, dot);
+  const minor = parseInt(val.slice(dot + 1), 10);
+  if (isNaN(minor)) return;
+  input.value = `${major}.${minor + 1}`;
+  goChannel();
 }
 
 async function launchApp(id) {
@@ -174,26 +188,48 @@ async function sendKey(key) {
       body: JSON.stringify({ key })
     });
   } catch (e) {}
+  if (key === 'CHANNELUP' || key === 'CHANNELDOWN') {
+    setTimeout(fetchCurrentChannel, 900);
+  }
+}
+
+async function fetchCurrentChannel() {
+  const base = getBaseUrl();
+  if (!base) return;
+  try {
+    const res = await fetch(`${base}/channels/current`);
+    const data = await res.json();
+    if (data.channelNumber) {
+      document.getElementById('ch-input').value = data.channelNumber;
+    }
+  } catch (e) {}
 }
 
 function goChannel() {
-  // Accept "5.1" or "5-1" format, convert to channelNumber for lookup
-  const val = document.getElementById('ch-input').value.trim().replace('.', '-');
+  const val = document.getElementById('ch-input').value.trim();
   if (!val) return;
   const base = getBaseUrl();
   if (!base) return;
-  // Use channelNumber format directly — server will pass to openChannel
   fetch(`${base}/channels/tune`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ channelId: val })
+    body: JSON.stringify({ channelNumber: val })
   }).catch(() => {});
+  setTimeout(fetchCurrentChannel, 900);
 }
 
 // Allow Enter key in channel input
 document.getElementById('ch-input').addEventListener('keydown', e => {
   if (e.key === 'Enter') goChannel();
 });
+
+// ── Viewport height fix (compensates for mobile URL bar) ──────────
+
+function updateAppHeight() {
+  document.documentElement.style.setProperty('--app-height', window.innerHeight + 'px');
+}
+window.addEventListener('resize', updateAppHeight);
+updateAppHeight();
 
 // ── Init ──────────────────────────────────────────────────────────
 

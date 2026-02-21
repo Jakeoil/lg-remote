@@ -3,7 +3,7 @@
 const express = require('express');
 const WebSocket = require('ws');
 
-const VALID_KEYS = new Set(['UP','DOWN','LEFT','RIGHT','ENTER','BACK','HOME','MENU','EXIT','GUIDE']);
+const VALID_KEYS = new Set(['UP','DOWN','LEFT','RIGHT','ENTER','BACK','HOME','MENU','EXIT','GUIDE','CHANNELUP','CHANNELDOWN']);
 
 // Cached pointer input socket
 let inputSocket = null;
@@ -25,6 +25,16 @@ async function getInputSocket(tvRequest) {
 
 module.exports = function(tvRequest) {
   const router = express.Router();
+
+  // Get currently tuned channel
+  router.get('/current', async (req, res) => {
+    try {
+      const result = await tvRequest('ssap://tv/getCurrentChannel', {});
+      res.json({ channelNumber: result.channelNumber, channelName: result.channelName });
+    } catch (err) {
+      res.status(500).json({ error: err.message });
+    }
+  });
 
   // List TV channels (for discovery)
   router.get('/list', async (req, res) => {
@@ -58,13 +68,14 @@ module.exports = function(tvRequest) {
     }
   });
 
-  // Tune to an OTA channel by signalChannelId
+  // Tune to an OTA channel — accepts channelId (internal) or channelNumber (e.g. "5.1")
   router.post('/tune', async (req, res) => {
     try {
-      const { channelId } = req.body;
-      if (!channelId) return res.status(400).json({ error: 'Missing channelId' });
-      await tvRequest('ssap://tv/openChannel', { channelId });
-      res.json({ success: true, channelId });
+      const { channelId, channelNumber } = req.body;
+      if (!channelId && !channelNumber) return res.status(400).json({ error: 'Missing channelId or channelNumber' });
+      const payload = channelId ? { channelId } : { channelNumber };
+      await tvRequest('ssap://tv/openChannel', payload);
+      res.json({ success: true, ...payload });
     } catch (err) {
       res.status(500).json({ error: err.message });
     }

@@ -13,6 +13,10 @@ input {
 /* Compact container/shared overrides for channels page */
 .container {
   padding: 16px 16px;
+  display: flex;
+  flex-direction: column;
+  height: var(--app-height, 100dvh);
+  box-sizing: border-box;
 }
 
 .title-bar {
@@ -50,6 +54,24 @@ input {
   grid-template-columns: repeat(3, 1fr);
   gap: 10px;
   margin-bottom: 4px;
+}
+
+/* On Air grid — scrollable after 2 rows */
+.on-air-grid {
+  max-height: 138px;
+  overflow-y: auto;
+}
+
+/* Streaming grid — scrollable after 2 rows */
+.streaming-grid {
+  max-height: 130px;
+  overflow-y: auto;
+}
+
+/* Navigate section pushed to bottom of viewport */
+.nav-label {
+  margin-top: auto;
+  padding-top: 10px;
 }
 
 .ch-tile {
@@ -134,9 +156,6 @@ input {
   grid-template-rows: auto auto;
   gap: 8px;
   margin-bottom: 4px;
-  max-width: 220px;
-  margin-left: auto;
-  margin-right: auto;
 }
 
 .dpad-btn {
@@ -174,13 +193,33 @@ input {
   border-color: #2a5a8c;
 }
 
-/* Channel entry row */
-.ch-entry {
+/* Channel nav row (inside ON AIR container) */
+.ch-nav {
   display: flex;
-  gap: 8px;
+  gap: 6px;
   align-items: center;
-  margin-top: 8px;
-  margin-bottom: 12px;
+  margin-top: 10px;
+}
+
+.ch-nav-btn {
+  background: #1e2d4a;
+  border: 1px solid #2a3a5c;
+  border-radius: 10px;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  font-weight: 700;
+  height: 40px;
+  width: 40px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.ch-nav-btn:active {
+  background: #2a4a6c;
+  color: #e2e8f0;
 }
 
 .ch-input {

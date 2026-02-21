@@ -40,28 +40,30 @@
 
     <!-- On Air -->
     <div class="section-label">On Air</div>
-    <div class="ch-grid">
-      <button class="ch-tile nbc"    onclick="tuneChannel('1_12_5_1_0_0_0')"><span class="ch-net">NBC</span><span class="ch-num">5.1</span></button>
-      <button class="ch-tile cbs"    onclick="tuneChannel('1_13_12_1_0_0_0')"><span class="ch-net">CBS</span><span class="ch-num">12.1</span></button>
-      <button class="ch-tile abc"    onclick="tuneChannel('1_16_25_1_0_0_0')"><span class="ch-net">ABC</span><span class="ch-num">25.1</span></button>
-      <button class="ch-tile pbs"    onclick="tuneChannel('1_29_2_1_0_0_0')"><span class="ch-net">PBS</span><span class="ch-num">2.1</span></button>
-      <button class="ch-tile metv"   onclick="tuneChannel('1_16_25_5_0_0_0')"><span class="ch-net">MeTV</span><span class="ch-num">25.5</span></button>
+    <div class="ch-grid on-air-grid">
+      <button class="ch-tile nbc"  onclick="tuneChannel('1_12_5_1_0_0_0',  '5.1')"><span class="ch-net">NBC</span><span class="ch-num">5.1</span></button>
+      <button class="ch-tile cbs"  onclick="tuneChannel('1_13_12_1_0_0_0', '12.1')"><span class="ch-net">CBS</span><span class="ch-num">12.1</span></button>
+      <button class="ch-tile abc"  onclick="tuneChannel('1_16_25_1_0_0_0', '25.1')"><span class="ch-net">ABC</span><span class="ch-num">25.1</span></button>
+      <button class="ch-tile pbs"  onclick="tuneChannel('1_29_2_1_0_0_0',   '2.1')"><span class="ch-net">PBS</span><span class="ch-num">2.1</span></button>
+      <button class="ch-tile metv" onclick="tuneChannel('1_16_25_5_0_0_0', '25.5')"><span class="ch-net">MeTV</span><span class="ch-num">25.5</span></button>
     </div>
-    <div class="ch-entry">
+    <div class="ch-nav">
       <button class="ch-go ch-guide" onclick="sendKey('GUIDE')">Guide</button>
-      <input type="text" id="ch-input" class="ch-input" inputmode="decimal" placeholder="e.g. 7.1" maxlength="6">
-      <button class="ch-go" onclick="goChannel()">Go</button>
+      <button class="ch-nav-btn"     onclick="sendKey('CHANNELDOWN')">◀</button>
+      <input type="text" id="ch-input" class="ch-input" inputmode="decimal" placeholder="ch" maxlength="6">
+      <button class="ch-nav-btn"     onclick="subchannelUp()">▲</button>
+      <button class="ch-nav-btn"     onclick="sendKey('CHANNELUP')">▶</button>
     </div>
 
     <!-- Streaming -->
     <div class="section-label">Streaming</div>
-    <div class="ch-grid">
-      <button class="ch-tile netflix"  onclick="launchApp('netflix')"><span class="ch-net">Netflix</span></button>
-      <button class="ch-tile max"      onclick="launchApp('com.wbd.stream')"><span class="ch-net">Max</span></button>
+    <div class="ch-grid streaming-grid">
+      <button class="ch-tile netflix" onclick="launchApp('netflix')"><span class="ch-net">Netflix</span></button>
+      <button class="ch-tile max"     onclick="launchApp('com.wbd.stream')"><span class="ch-net">Max</span></button>
     </div>
 
-    <!-- Navigation D-pad -->
-    <div class="section-label">Navigate</div>
+    <!-- Navigate — hugs bottom -->
+    <div class="section-label nav-label">Navigate</div>
     <div class="dpad">
       <button class="dpad-btn dpad-up"    onclick="sendKey('UP')">▲</button>
       <button class="dpad-btn dpad-left"  onclick="sendKey('LEFT')">◀</button>
@@ -72,6 +74,6 @@
     </div>
 
   </div>
-  <script src="channels-app.js"></script>
+  <script src="channels-app.js?v=4"></script>
 </body>
 </html>
