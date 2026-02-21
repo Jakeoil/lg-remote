@@ -210,6 +210,25 @@ function sonosRequest(endpoint, service, action, body) {
   });
 }
 
+async function sonosEnsureTVInput() {
+  try {
+    const xml = await sonosRequest(
+      '/MediaRenderer/AVTransport/Control',
+      'AVTransport', 'GetTransportInfo',
+      '<InstanceID>0</InstanceID>'
+    );
+    const match = xml.match(/<CurrentTransportState>(.+?)<\/CurrentTransportState>/);
+    const state = match ? match[1] : 'UNKNOWN';
+    if (state !== 'PLAYING') {
+      await sonosPlayTV();
+      await sonosMute(false);
+    }
+  } catch (e) {
+    // If we can't check, try to activate anyway
+    await sonosPlayTV().catch(() => {});
+  }
+}
+
 function sonosStop() {
   console.log('Stopping Sonos...');
   return sonosRequest(
@@ -518,6 +537,7 @@ app.get('/sonos/volume', async (req, res) => {
 app.post('/sonos/volume', async (req, res) => {
   try {
     const vol = Math.max(0, Math.min(100, parseInt(req.body.volume, 10)));
+    await sonosEnsureTVInput();
     await sonosRequest(
       '/MediaRenderer/RenderingControl/Control',
       'RenderingControl', 'SetVolume',
