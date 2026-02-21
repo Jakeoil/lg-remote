@@ -452,6 +452,24 @@ body {
   flex-shrink: 0;
 }
 
+/* Rotary knob volume control */
+.volume-knob-bar {
+  align-items: center;
+}
+
+.tv-knob {
+  width: 80px;
+  height: 80px;
+  flex-shrink: 0;
+  margin-left: auto;
+  display: block;
+  cursor: grab;
+}
+
+.tv-knob:active {
+  cursor: grabbing;
+}
+
 /* Output radio buttons */
 .output-radios {
   display: flex;
