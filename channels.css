@@ -258,3 +258,17 @@ input {
 .ch-go:active {
   background: #2a4a6c;
 }
+
+/* Short screens (iPhone 8 and similar ~667px) — trim spacing to fit */
+@media (max-height: 700px) {
+  .container      { padding: 10px 14px; }
+  .title-bar      { margin-bottom: 8px; }
+  .volume-bar     { padding: 5px 8px; margin-bottom: 5px; }
+  .section-label  { margin: 6px 0 3px 2px; }
+  .on-air-grid    { max-height: 118px; }
+  .ch-nav         { margin-top: 6px; }
+  .streaming-grid { max-height: 110px; }
+  .nav-label      { padding-top: 6px; }
+  .dpad-btn       { height: 40px; }
+  .dpad-back      { height: 30px; }
+}
