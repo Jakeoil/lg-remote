@@ -69,9 +69,12 @@ async function fetchPowerStatus() {
 
 // ── Sonos volume ─────────────────────────────────────────────────
 
+let sonosFetching = false;
 async function fetchSonosVolume() {
+  if (sonosFetching) return;
+  sonosFetching = true;
   const base = getBaseUrl();
-  if (!base) return;
+  if (!base) { sonosFetching = false; return; }
   try {
     const [volRes, muteRes] = await Promise.all([
       fetch(`${base}/sonos/volume`).then(r => r.json()),
@@ -80,6 +83,7 @@ async function fetchSonosVolume() {
     if (volRes.volume !== undefined) updateSonosVolumeDisplay(volRes.volume);
     if (muteRes.muted !== null && muteRes.muted !== undefined) updateSonosMuteDisplay(muteRes.muted);
   } catch (e) {}
+  finally { sonosFetching = false; }
 }
 
 function updateSonosVolumeDisplay(vol) {
@@ -231,8 +235,19 @@ function updateAppHeight() {
 window.addEventListener('resize', updateAppHeight);
 updateAppHeight();
 
+// ── SSE — use LG volume events as trigger to refresh Sonos slider ──
+
+function subscribeVolumeEvents() {
+  const base = getBaseUrl();
+  if (!base) return;
+  const es = new EventSource(`${base}/volume/events`);
+  es.onmessage = () => fetchSonosVolume();
+  es.onerror   = () => { es.close(); setTimeout(subscribeVolumeEvents, 5000); };
+}
+
 // ── Init ──────────────────────────────────────────────────────────
 
 fetchPowerStatus();
 fetchSonosVolume();
 setInterval(fetchPowerStatus, 15000);
+subscribeVolumeEvents();

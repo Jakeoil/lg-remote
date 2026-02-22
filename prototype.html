@@ -6,17 +6,25 @@
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="theme-color" content="#1a1a2e">
-  <title>Knob Prototype</title>
+  <title>Prototype</title>
   <link rel="stylesheet" href="styles.css">
   <style>
-    body { display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+    body {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      gap: 32px;
+    }
+
     .proto-wrap {
       display: flex;
       flex-direction: column;
       align-items: center;
-      gap: 24px;
-      padding: 40px;
+      gap: 16px;
     }
+
     .proto-label {
       color: #64748b;
       font-size: 0.75rem;
@@ -24,7 +32,9 @@
       letter-spacing: 1px;
       text-transform: uppercase;
     }
-    .proto-bar {
+
+    /* Knob section */
+    .knob-bar {
       display: flex;
       align-items: center;
       gap: 16px;
@@ -32,6 +42,7 @@
       border-radius: 16px;
       padding: 16px 20px;
     }
+
     .proto-mute {
       background: none;
       border: none;
@@ -39,21 +50,52 @@
       cursor: pointer;
       padding: 4px;
     }
+
     .tv-knob { width: 120px; height: 120px; display: block; cursor: grab; }
     .tv-knob:active { cursor: grabbing; }
+
+    /* Ruler section */
+    .ruler-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      background: #16213e;
+      border-radius: 16px;
+      padding: 16px 16px;
+      width: min(400px, calc(100vw - 48px));
+      box-sizing: border-box;
+    }
+
+    .ruler-canvas {
+      flex: 1;
+      min-width: 0;
+      display: block;
+      cursor: ew-resize;
+    }
   </style>
 </head>
 <body>
+
+  <!-- Rotary knob — TV volume -->
   <div class="proto-wrap">
-    <div class="proto-label">Rotary Knob Prototype</div>
-    <div class="proto-bar">
-      <button class="proto-mute" id="mute-btn" onclick="toggleMute()">🔊</button>
+    <div class="proto-label">Rotary Knob — TV Volume</div>
+    <div class="knob-bar">
+      <button class="proto-mute" id="tv-mute-btn" onclick="toggleTvMute()">🔊</button>
       <canvas id="tv-knob" class="tv-knob"></canvas>
     </div>
-    <div class="proto-label">TV Volume</div>
+  </div>
+
+  <!-- Sliding ruler — Sonos volume -->
+  <div class="proto-wrap">
+    <div class="proto-label">Sliding Rule — Sonos Volume</div>
+    <div class="ruler-bar" id="ruler-bar">
+      <button class="btn-mute-icon" id="sonos-mute-btn" onclick="toggleSonosMute()">🔊</button>
+      <canvas id="sonos-ruler" class="ruler-canvas"></canvas>
+    </div>
   </div>
 
   <script src="rotary-knob.js"></script>
+  <script src="sliding-ruler.js"></script>
   <script>
     const STORAGE_KEY = 'lg-remote-server-url';
 
@@ -71,11 +113,10 @@
              /^172\.(1[6-9]|2[0-9]|3[01])\./.test(host);
     }
 
-    if (isLocalNetwork()) {
-      localStorage.setItem(STORAGE_KEY, window.location.origin);
-    }
+    if (isLocalNetwork()) localStorage.setItem(STORAGE_KEY, window.location.origin);
 
-    // Init knob at 120px
+    // ── Rotary knob (TV volume) ───────────────────────────────────
+
     const knob = new RotaryKnob(document.getElementById('tv-knob'), {
       volume: 0,
       onChange: vol => {
@@ -89,47 +130,100 @@
       }
     });
 
-    // Override knob size to 120px
-    (function resizeKnob() {
+    // Override to 120px
+    (function() {
       const dpr = window.devicePixelRatio || 1;
-      const canvas = document.getElementById('tv-knob');
-      canvas.width = 120 * dpr;
-      canvas.height = 120 * dpr;
+      const c = document.getElementById('tv-knob');
+      c.width = 120 * dpr; c.height = 120 * dpr;
       knob.ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
-      knob._s = 120;
-      knob._draw();
+      knob._s = 120; knob._draw();
     })();
 
-    // Mute toggle
-    let muted = false;
-    async function toggleMute() {
+    let tvMuted = false;
+    async function toggleTvMute() {
       const base = getBaseUrl();
       if (!base) return;
-      const res = await fetch(`${base}/volume/mute`, { method: 'POST' }).then(r => r.json()).catch(() => null);
+      const res = await fetch(`${base}/volume/mute`, { method: 'POST' })
+        .then(r => r.json()).catch(() => null);
       if (res && res.muted !== undefined) {
-        muted = res.muted;
-        document.getElementById('mute-btn').textContent = muted ? '🔇' : '🔊';
+        tvMuted = res.muted;
+        document.getElementById('tv-mute-btn').textContent = tvMuted ? '🔇' : '🔊';
       }
     }
 
-    // Sync volume from SSE
-    let volumeSource = null;
-    function subscribe() {
+    // SSE sync — updates knob; in-flight guard for Sonos ruler fetch
+    let sonosFetching = false;
+    function scheduleSonosFetch() {
+      if (sonosFetching) return;
+      sonosFetching = true;
       const base = getBaseUrl();
-      if (!base || volumeSource) return;
-      volumeSource = new EventSource(`${base}/volume/events`);
-      volumeSource.onmessage = e => {
-        const data = JSON.parse(e.data);
-        if (data.volume !== undefined) knob.setVolume(data.volume);
-        if (data.muted !== undefined) {
-          muted = data.muted;
-          document.getElementById('mute-btn').textContent = muted ? '🔇' : '🔊';
-        }
-      };
-      volumeSource.onerror = () => { volumeSource.close(); volumeSource = null; };
+      if (!base) { sonosFetching = false; return; }
+      fetch(`${base}/sonos/volume`)
+        .then(r => r.json())
+        .then(d => { if (d.volume !== undefined && ruler) ruler.setVolume(d.volume); })
+        .catch(() => {})
+        .finally(() => { sonosFetching = false; });
     }
 
-    subscribe();
+    (function subscribe() {
+      const base = getBaseUrl();
+      if (!base) return;
+      const es = new EventSource(`${base}/volume/events`);
+      es.onmessage = e => {
+        const d = JSON.parse(e.data);
+        if (d.volume !== undefined) knob.setVolume(d.volume);
+        if (d.muted  !== undefined) {
+          tvMuted = d.muted;
+          document.getElementById('tv-mute-btn').textContent = tvMuted ? '🔇' : '🔊';
+        }
+        scheduleSonosFetch();
+      };
+      es.onerror = () => { es.close(); setTimeout(subscribe, 3000); };
+    })();
+
+    // ── Sliding ruler (Sonos volume) ──────────────────────────────
+
+    let ruler;
+
+    // Init after layout so canvas.offsetWidth is correct
+    requestAnimationFrame(() => {
+      const canvas = document.getElementById('sonos-ruler');
+      ruler = new SlidingRuler(canvas, {
+        height: 70,
+        volume: 0,
+        onChange: vol => {
+          const base = getBaseUrl();
+          if (!base) return;
+          fetch(`${base}/sonos/volume`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ volume: vol })
+          }).catch(() => {});
+        }
+      });
+
+      // Fetch initial Sonos volume
+      const base = getBaseUrl();
+      if (base) {
+        fetch(`${base}/sonos/volume`)
+          .then(r => r.json())
+          .then(d => { if (d.volume !== undefined) ruler.setVolume(d.volume); })
+          .catch(() => {});
+      }
+    });
+
+    async function toggleSonosMute() {
+      const base = getBaseUrl();
+      if (!base) return;
+      const res = await fetch(`${base}/sonos/mute`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ muted: !document.getElementById('sonos-mute-btn').classList.contains('muted') })
+      }).then(r => r.json()).catch(() => null);
+      if (res && res.muted !== undefined) {
+        document.getElementById('sonos-mute-btn').classList.toggle('muted', res.muted);
+      }
+    }
   </script>
 </body>
 </html>

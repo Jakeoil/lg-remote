@@ -143,14 +143,87 @@ The web UI's Sonos volume slider will be stale until the next time the app polls
 | `/volume/set` called in ARC mode | LG bar shows wrong value; Sonos unchanged | Routes to TV, not Sonos |
 | CEC not primed + old volume path used | Web UI updates but no audible change | CEC dormant |
 | LG mute active + Sonos volume shown as non-zero | Both mutes shown independently | Two separate mutes |
+| Physical remote vol-up → LG +1, Sonos +2 (intermittent) | Sonos drifts ahead | LG TV may send two CEC commands per button press (button-down + button-up); Sonos counts both |
+
+---
+
+## Web UI Volume Control Flows
+
+### Flow 1 — User adjusts Sonos slider / ruler in web UI
+```
+User drags slider or ruler
+        │
+        ▼
+POST /sonos/volume  { volume: N }
+        │
+        ▼
+sonosEnsureTVInput()          ← activates ARC input if Sonos is stopped
+        │
+        ▼
+Sonos UPnP SetVolume          ← direct, bypasses CEC entirely
+        │
+        ▼
+Response → web UI confirms new value
+```
+
+### Flow 2 — User presses +/- step buttons in web UI
+```
+POST /volume/up  or  /volume/down
+        │
+        ▼
+currentOutput === 'external_arc' ?
+   YES → Sonos UPnP GetVolume → compute N±1 → SetVolume
+   NO  → ssap://audio/volumeUp / volumeDown  →  LG TV speakers / optical
+```
+
+### Flow 3 — Physical IR remote changes volume
+```
+Remote button press
+        │
+        ├─► LG TV processes it  →  ssap://audio/getVolume SSE fires
+        │                               │
+        │                               ▼
+        │                         Web UI receives SSE event
+        │                               │
+        │                               ├─► LG volume bar / knob updated immediately
+        │                               │
+        │                               └─► Sonos poll triggered (in-flight guard):
+        │                                     if no poll in flight → GET /sonos/volume
+        │                                     → UPnP GetVolume → update Sonos slider/ruler
+        │
+        └─► In ARC mode: LG sends CEC to Sonos (only if CEC listener active/primed)
+```
+
+### Flow 4 — Sonos volume changed externally (Sonos app, touch panel)
+```
+External change
+        │
+        ▼
+No push event reaches server
+        │
+        ▼
+Web UI Sonos slider drifts until next SSE-triggered poll
+(next remote press will re-sync it)
+```
+
+### In-flight guard (Sonos polling)
+The SSE can fire rapidly (e.g. holding a remote button). To prevent concurrent Sonos
+UPnP requests from piling up and starving the SSE connection, a boolean `sonosFetching`
+flag ensures only one GET /sonos/volume is in flight at a time. If an event arrives
+while a poll is in progress, it is dropped — the in-progress poll will return the
+latest value anyway.
 
 ---
 
 ## Potential Improvements
 
-1. **Poll Sonos volume periodically** (e.g. every 10s) to reduce drift of the Sonos bar
-2. **Fix `/volume/set` to respect ARC mode** — same routing logic as `/volume/up` and `/volume/down`
-3. **Sonos webhook/subscription** — Sonos supports UPnP event subscriptions (`SUBSCRIBE` HTTP method
+1. **Fix `/volume/set` to respect ARC mode** — same routing logic as `/volume/up` and `/volume/down`
+2. **Sonos webhook/subscription** — Sonos supports UPnP event subscriptions (`SUBSCRIBE` HTTP method
    on `RenderingControl` endpoint) for push notifications of volume changes from any source
-4. **Unified mute** — in ARC mode, LG mute could simultaneously mute/unmute the Sonos so they
+3. **Unified mute** — in ARC mode, LG mute could simultaneously mute/unmute the Sonos so they
    stay in sync
+4. **Route Sonos volume through LG SSAP** — instead of directly calling Sonos UPnP `SetVolume`,
+   call `ssap://audio/setVolume` with an absolute value. The LG TV forwards it to Sonos via CEC
+   as a single atomic command. This avoids the double-increment problem and removes the need for
+   the Sonos-specific GetVolume→compute→SetVolume round-trip. Requires CEC to be primed (same
+   limitation as the old path), but sonosEnsureTVInput() could be called first to activate it.
