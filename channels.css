@@ -23,9 +23,21 @@ input {
   margin-bottom: 12px;
 }
 
-.volume-bar {
-  padding: 8px;
+.ruler-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #16213e;
+  border-radius: 12px;
+  padding: 7px 12px;
   margin-bottom: 8px;
+}
+
+.ruler-canvas {
+  flex: 1;
+  min-width: 0;
+  display: block;
+  cursor: ew-resize;
 }
 
 .back-link {
@@ -263,7 +275,7 @@ input {
 @media (max-height: 700px) {
   .container      { padding: 10px 14px; }
   .title-bar      { margin-bottom: 8px; }
-  .volume-bar     { padding: 5px 8px; margin-bottom: 5px; }
+  .ruler-bar      { padding: 5px 10px; margin-bottom: 5px; }
   .section-label  { margin: 6px 0 3px 2px; }
   .on-air-grid    { max-height: 118px; }
   .ch-nav         { margin-top: 6px; }
