@@ -20,7 +20,7 @@ class SlidingRuler {
 
     this._w   = cssW;
     this._h   = cssH;
-    this._ppu = cssW / 20; // pixels per unit (full width = 20 units)
+    this._ppu = cssW / 30; // pixels per unit (full width = 30 units)
 
     // Interaction state
     this._dragging  = false;
@@ -64,7 +64,7 @@ class SlidingRuler {
     const now = performance.now();
     const dx  = e.clientX - this._lastX;
     const dt  = Math.max(now - this._lastT, 1);
-    const dv  = dx / this._ppu; // right = positive = volume up
+    const dv  = -dx / this._ppu; // drag left = volume up (dial follows finger)
 
     this._vHist.push({ v: dv / dt * 16, t: now }); // store units/frame
     if (this._vHist.length > 6) this._vHist.shift();
@@ -130,10 +130,8 @@ class SlidingRuler {
     const { _w: w, _h: h, _ppu: ppu, _vol: vol } = this;
     const cx = w / 2;
 
-    // Vertical layout — triangle sits above the track
-    const TRI_H   = 9;
-    const TRACK_Y = TRI_H + 2;
-    const TRACK_H = h - TRACK_Y;
+    const TRACK_Y = 0;
+    const TRACK_H = h;
     const MID_Y   = TRACK_Y + TRACK_H / 2; // vertical centre of track
 
     ctx.clearRect(0, 0, w, h);
@@ -151,25 +149,25 @@ class SlidingRuler {
 
     for (let u = uMin; u <= uMax; u++) {
       if (u < 0 || u > 100) continue;
-      const x = cx + (vol - u) * ppu; // reversed
+      const x = cx + (u - vol) * ppu;
       if (x < 0 || x > w) continue;
 
       const rx = Math.round(x);
 
       if (u % 10 === 0) {
         // Large label — about half the track height
-        const labelSize = Math.round(TRACK_H * 0.48);
+        const labelSize = Math.round(TRACK_H * 0.45);
         ctx.font = `bold ${labelSize}px system-ui, sans-serif`;
         const label = String(u);
         const lw = ctx.measureText(label).width + 6;
 
         // Full-height line, split above and below the label
-        ctx.fillStyle = '#2e4060';
+        ctx.fillStyle = '#4a6080';
         ctx.fillRect(rx - 0.75, TRACK_Y, 1.5, MID_Y - TRACK_Y - labelSize / 2 - 2);
         ctx.fillRect(rx - 0.75, MID_Y + labelSize / 2 + 2, 1.5, TRACK_Y + TRACK_H - (MID_Y + labelSize / 2 + 2));
 
         // Label centred vertically
-        ctx.fillStyle = '#475569';
+        ctx.fillStyle = '#94a3b8';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText(label, rx, MID_Y);
@@ -177,12 +175,12 @@ class SlidingRuler {
 
       } else if (u % 5 === 0) {
         const th = TRACK_H * 0.44;
-        ctx.fillStyle = '#3a4a60';
+        ctx.fillStyle = '#5a7a9a';
         ctx.fillRect(rx - 0.75, TRACK_Y + TRACK_H - th, 1.5, th);
 
       } else {
         const th = TRACK_H * 0.22;
-        ctx.fillStyle = '#1e2d42';
+        ctx.fillStyle = '#3a5068';
         ctx.fillRect(rx - 0.5, TRACK_Y + TRACK_H - th, 1, th);
       }
     }
@@ -209,20 +207,6 @@ class SlidingRuler {
     ctx.stroke();
     ctx.restore();
 
-    // ── Triangle pointer above track ──────────────────────────────
-    ctx.fillStyle = '#4a90d9';
-    ctx.beginPath();
-    ctx.moveTo(cx - TRI_H, 0);
-    ctx.lineTo(cx + TRI_H, 0);
-    ctx.lineTo(cx, TRACK_Y);
-    ctx.closePath();
-    ctx.fill();
-
-    // ── Current volume value above the triangle ───────────────────
-    ctx.fillStyle = '#e2e8f0';
-    ctx.font = 'bold 11px system-ui, sans-serif';
-    ctx.textAlign = 'center';
-    ctx.fillText(String(Math.round(vol)), cx, TRI_H - 1);
   }
 
   _rrect(x, y, w, h, r) {
