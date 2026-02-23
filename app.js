@@ -262,6 +262,9 @@ function updateAudioOutput(output) {
 }
 
 // Fetch current audio output status from proxy server
+let statusFailCount = 0;
+const STATUS_FAIL_THRESHOLD = 3; // consecutive failures before showing "off"
+
 async function fetchStatus() {
   const base = getBaseUrl();
   if (!base) return;
@@ -270,20 +273,27 @@ async function fetchStatus() {
     const res = await fetch(`${base}/status`);
     const data = await res.json();
     if (!res.ok) {
+      statusFailCount++;
       flashPollLight(false);
-      if (!powerBusy) updatePowerButton(false);
-      const allBtns = [gamingBtn, normalBtn, headphoneBtn];
-      allBtns.forEach(b => b.classList.remove('active'));
-      showStatus('TV is off', 'connected');
+      if (!powerBusy && statusFailCount >= STATUS_FAIL_THRESHOLD) {
+        updatePowerButton(false);
+        const allBtns = [gamingBtn, normalBtn, headphoneBtn];
+        allBtns.forEach(b => b.classList.remove('active'));
+        showStatus('TV is off', 'connected');
+      }
       return;
     }
 
+    statusFailCount = 0;
     flashPollLight(true);
     if (!powerBusy) updatePowerButton(true);
     updateAudioOutput(data.output);
   } catch (err) {
+    statusFailCount++;
     flashPollLight(false);
-    showStatus(`Cannot reach server`, 'error');
+    if (statusFailCount >= STATUS_FAIL_THRESHOLD) {
+      showStatus(`Cannot reach server`, 'error');
+    }
   }
 }
 

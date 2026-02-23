@@ -35,17 +35,15 @@ app.use(express.static(path.join(__dirname, '..')));  // serve frontend files
 // ── LG TV connection ──────────────────────────────────────────
 let tvConnection = null;
 let tvConnected = false;
-let tvConnecting = null; // pending Promise while connect is in progress
+let tvConnecting = null;
 
 // Connect to the TV. The lgtv2 library handles pairing automatically -
 // on first connection, an "accept" prompt appears on the TV screen.
 // The client key is saved to ~/.lgtv2/client-key for future connections.
 function connectTV() {
-  // If already connected, reuse
   if (tvConnection && tvConnected) {
     return Promise.resolve(tvConnection);
   }
-  // If a connection attempt is already in progress, wait for it
   if (tvConnecting) {
     return tvConnecting;
   }
@@ -87,17 +85,32 @@ function connectTV() {
       tvConnecting = null;
     });
 
-    // Timeout if the TV doesn't respond (e.g. TV is off)
     setTimeout(() => {
       if (!tvConnected) {
         tvConnecting = null;
-        reject(new Error('Connection timed out - is the TV on?'));
+        reject(new Error('Connection timed out'));
       }
-    }, 10000);
+    }, 5000);
   });
 
   return tvConnecting;
 }
+
+// Background reconnect: when disconnected, TCP-ping port 3001 every 10s.
+// Only attempts WebSocket connection if the port is actually open.
+setInterval(() => {
+  if (tvConnected || tvConnecting) return;
+  const sock = new net.Socket();
+  sock.setTimeout(2000);
+  sock.once('connect', () => {
+    sock.destroy();
+    console.log('TV port reachable — attempting reconnect...');
+    connectTV().catch(() => {});
+  });
+  sock.once('error', () => sock.destroy());
+  sock.once('timeout', () => sock.destroy());
+  sock.connect(3001, TV_IP);
+}, 10000);
 
 // ── Volume subscription via SSE ──────────────────────────────
 let currentVolume = null;
@@ -237,7 +250,7 @@ function sonosStop() {
     '<InstanceID>0</InstanceID>'
   );
 }
-
+1
 function sonosPlayTV() {
   console.log('Switching Sonos to TV input and playing...');
   return sonosRequest(
@@ -441,8 +454,11 @@ app.post('/volume/down', async (req, res) => {
   }
 });
 
-// Get current audio output status
+// Get current audio output status (poll-safe: does not attempt connection)
 app.get('/status', async (req, res) => {
+  if (!tvConnected) {
+    return res.status(500).json({ error: 'TV not connected' });
+  }
   try {
     const result = await tvRequest('ssap://audio/getSoundOutput', {});
     res.json({ output: result.soundOutput || result.output || 'unknown' });
