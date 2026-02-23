@@ -29,6 +29,12 @@
   var startX, startY;
 
   document.addEventListener('touchstart', function (e) {
+    // Don't capture swipes that start on interactive controls
+    var el = e.target;
+    if (el.closest('canvas, input[type="range"], .knob-bar, .ruler-bar, .volume-bar')) {
+      startX = null;
+      return;
+    }
     var t = e.touches[0];
     startX = t.clientX;
     startY = t.clientY;
