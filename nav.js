@@ -20,6 +20,22 @@
   var title = document.querySelector('.title');
   if (title) {
     title.style.cursor = 'pointer';
+    // Use touchend to avoid 300ms mobile click delay
+    var titleTapX, titleTapY;
+    title.addEventListener('touchstart', function (e) {
+      var t = e.touches[0];
+      titleTapX = t.clientX;
+      titleTapY = t.clientY;
+    }, { passive: true });
+    title.addEventListener('touchend', function (e) {
+      var t = e.changedTouches[0];
+      // Only fire if finger didn't move (not a swipe)
+      if (Math.abs(t.clientX - titleTapX) < 10 && Math.abs(t.clientY - titleTapY) < 10) {
+        e.preventDefault(); // prevent ghost click
+        go((cur + 1) % pages.length);
+      }
+    });
+    // Desktop fallback
     title.addEventListener('click', function () {
       go((cur + 1) % pages.length);
     });
@@ -53,4 +69,9 @@
     if (dx < 0 && cur < pages.length - 1) go(cur + 1);   // swipe left → next
     if (dx > 0 && cur > 0)                go(cur - 1);   // swipe right → prev
   }, { passive: true });
+
+  // ── Service worker registration (cache static assets) ──────────
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('/sw.js').catch(function () {});
+  }
 })();
