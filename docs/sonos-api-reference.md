@@ -61,12 +61,16 @@ All use `SetEQ` / `GetEQ` with `<EQType>` and `<DesiredValue>`.
 | EQType | Range | Description |
 |---|---|---|
 | `NightMode` | 0 / 1 | Night mode (compressed dynamics) |
-| `DialogLevel` | 0 / 1 | Speech enhancement |
-| `SubGain` | -15 to +15 | Subwoofer level |
+| `SpeechEnhanceEnabled` | 0 / 1 | Speech enhancement on/off (Arc Ultra) |
+| `DialogLevel` | 1–4 | Speech enhancement intensity: 1=Low, 2=Medium, 3=High, 4=Max (Arc Ultra). Does not return 0 when disabled — use `SpeechEnhanceEnabled` to toggle. On older devices (Arc, Beam) this is 0/1 boolean. |
+| `SubGain` | -10 to +10 | Subwoofer level |
 | `SurroundEnable` | 0 / 1 | Surround sound on/off |
 | `SurroundLevel` | -15 to +15 | Surround speaker level |
+| `SurroundMode` | 0 / 1 | 0=Ambient, 1=Full (Arc Ultra) |
 | `MusicSurroundLevel` | -15 to +15 | Music surround level |
-| `HeightChannelLevel` | -15 to +15 | Atmos height channel level |
+| `HeightChannelLevel` | -10 to +10 | Atmos height channel level |
+
+Not all EQ types are available on every speaker model.
 
 ### Bass & Treble
 
