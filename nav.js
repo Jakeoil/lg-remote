@@ -47,7 +47,7 @@
   document.addEventListener('touchstart', function (e) {
     // Don't capture swipes that start on interactive controls
     var el = e.target;
-    if (el.closest('canvas, input[type="range"], .knob-bar, .ruler-bar, .volume-bar')) {
+    if (el.closest('canvas, input[type="range"], .knob-bar, .ruler-bar')) {
       startX = null;
       return;
     }

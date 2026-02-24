@@ -319,15 +319,22 @@ body {
   box-shadow: 0 0 30px #38bdf866;
 }
 
-/* Volume bar */
-.volume-bar {
+/* Volume ruler bar */
+.ruler-bar {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 12px;
+  gap: 10px;
   background: #16213e;
   border-radius: 12px;
+  padding: 7px 12px;
   margin-bottom: 12px;
+}
+
+.ruler-canvas {
+  flex: 1;
+  min-width: 0;
+  display: block;
+  cursor: ew-resize;
 }
 
 .volume-label {
@@ -344,18 +351,6 @@ body {
   fill: #64748b;
 }
 
-.sonos-slider::-webkit-slider-thumb {
-  background: #f97316;
-}
-
-.sonos-slider::-moz-range-thumb {
-  background: #f97316;
-}
-
-.volume-bar.ghosted {
-  opacity: 0.3;
-  pointer-events: none;
-}
 
 .btn-mute-icon {
   background: none;
@@ -392,65 +387,6 @@ body {
   );
 }
 
-.btn-step {
-  background: #1e2d4a;
-  border: 1px solid #2a3a5c;
-  border-radius: 8px;
-  color: #94a3b8;
-  font-size: 1.1rem;
-  font-weight: 700;
-  width: 30px;
-  height: 30px;
-  cursor: pointer;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.btn-step:active {
-  background: #2a3a5c;
-  color: #e2e8f0;
-}
-
-.volume-slider {
-  flex: 1;
-  -webkit-appearance: none;
-  appearance: none;
-  height: 6px;
-  border-radius: 3px;
-  background: #2a3a5c;
-  outline: none;
-}
-
-.volume-slider::-webkit-slider-thumb {
-  -webkit-appearance: none;
-  appearance: none;
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #4a90d9;
-  cursor: pointer;
-  border: 2px solid #1a1a2e;
-}
-
-.volume-slider::-moz-range-thumb {
-  width: 22px;
-  height: 22px;
-  border-radius: 50%;
-  background: #4a90d9;
-  cursor: pointer;
-  border: 2px solid #1a1a2e;
-}
-
-.volume-num {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #e2e8f0;
-  min-width: 26px;
-  text-align: right;
-  flex-shrink: 0;
-}
 
 /* Rotary knob volume control */
 .volume-knob-bar {

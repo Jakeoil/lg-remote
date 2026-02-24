@@ -16,11 +16,28 @@ const plugState = document.getElementById('plug-state');
 const sonosDot = document.getElementById('sonos-dot');
 const sonosState = document.getElementById('sonos-state');
 
-const volumeSlider = document.getElementById('volume-slider');
-volumeSlider.addEventListener('input', (e) => onSliderInput(e.target.value));
-
 // Unified volume state: 'lg' or 'sonos'
 let activeVolume = 'lg';
+let ruler = null;
+
+// Init ruler after layout so canvas.offsetWidth is correct
+requestAnimationFrame(() => {
+  const canvas = document.getElementById('volume-ruler');
+  ruler = new SlidingRuler(canvas, {
+    height: 46,
+    volume: 0,
+    onChange: vol => {
+      const base = getBaseUrl();
+      if (!base) return;
+      const endpoint = activeVolume === 'sonos' ? '/sonos/volume' : '/volume/set';
+      fetch(`${base}${endpoint}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ volume: vol })
+      }).catch(() => {});
+    }
+  });
+});
 
 const LG_ICON_SVG = '<svg class="brand-icon" role="img" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path d="M14.522 14.078h3.27v1.33h-4.847v-6.83h1.577v5.5zm6.74-1.274h1.284v1.195c-.236.09-.698.18-1.137.18-1.42 0-1.893-.721-1.893-2.186 0-1.398.45-2.221 1.869-2.221.791 0 1.24.248 1.612.722l.982-.903c-.6-.855-1.646-1.114-2.629-1.114-2.208 0-3.368 1.205-3.368 3.504 0 2.288 1.047 3.528 3.358 3.528 1.06 0 2.096-.27 2.66-.665V11.53h-2.739v1.274zM5.291 6.709a5.29 5.29 0 1 1 0 10.582 5.291 5.291 0 1 1 0-10.582m3.16 8.457a4.445 4.445 0 0 0 1.31-3.161v-.242l-.22.001H6.596v.494h2.662l-.001.015a3.985 3.985 0 0 1-3.965 3.708 3.95 3.95 0 0 1-2.811-1.165 3.952 3.952 0 0 1-1.164-2.811c0-1.061.414-2.059 1.164-2.81a3.951 3.951 0 0 1 2.81-1.164l.252.003v-.495l-.251-.003a4.475 4.475 0 0 0-4.47 4.469c0 1.194.465 2.316 1.309 3.161a4.444 4.444 0 0 0 3.16 1.31 4.444 4.444 0 0 0 3.162-1.31m-2.91-1.297V9.644H5.04v4.72h1.556v-.495H5.543zm-1.265-3.552a.676.676 0 1 0-.675.674.676.676 0 0 0 .675-.674"/></svg>';
 
@@ -122,54 +139,6 @@ function updateMuteDisplay(muted) {
   }
 }
 
-// Adjust volume up or down (step buttons, routes to active device)
-async function adjustVolume(direction) {
-  if (activeVolume === 'sonos') {
-    const delta = direction === 'up' ? 1 : -1;
-    const current = parseInt(volumeSlider.value, 10) || 0;
-    const next = Math.max(0, Math.min(100, current + delta));
-    const base = getBaseUrl();
-    if (!base) return;
-    try {
-      const res = await fetch(`${base}/sonos/volume`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ volume: next })
-      });
-      const data = await res.json();
-      if (data.volume !== undefined) updateVolumeDisplay(data.volume);
-    } catch (err) { /* silently fail */ }
-  } else {
-    const data = await sendCommand(`/volume/${direction}`);
-    if (data && data.volume !== undefined) {
-      updateVolumeDisplay(data.volume);
-    }
-  }
-}
-
-// Set volume to specific level (slider, routes to active device)
-let volumeDebounce = null;
-function onSliderInput(val) {
-  document.getElementById('volume-level').textContent = val;
-  clearTimeout(volumeDebounce);
-  volumeDebounce = setTimeout(() => {
-    const base = getBaseUrl();
-    if (!base) return;
-    const endpoint = activeVolume === 'sonos' ? '/sonos/volume' : '/volume/set';
-    fetch(`${base}${endpoint}`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ volume: parseInt(val, 10) })
-    }).catch(() => {});
-  }, 100);
-}
-
-// Update volume display (slider + number)
-function updateVolumeDisplay(vol) {
-  document.getElementById('volume-level').textContent = vol;
-  document.getElementById('volume-slider').value = vol;
-}
-
 // Set audio output via mode endpoints
 const outputModeMap = {
   tv_speaker: 'gaming',
@@ -196,7 +165,7 @@ async function fetchSonosVolume() {
       fetch(`${base}/sonos/mute`).then(r => r.json())
     ]);
     if (activeVolume === 'sonos') {
-      if (volRes.volume !== undefined) updateVolumeDisplay(volRes.volume);
+      if (volRes.volume !== undefined && ruler) ruler.setVolume(volRes.volume);
       if (muteRes.muted !== null && muteRes.muted !== undefined) updateMuteDisplay(muteRes.muted);
     }
   } catch (err) {
@@ -230,12 +199,10 @@ function updateAudioOutput(output) {
   if (output === 'external_arc') {
     activeVolume = 'sonos';
     brand.innerHTML = SONOS_ICON_SVG;
-    volumeSlider.classList.add('sonos-slider');
     fetchSonosVolume();
   } else {
     activeVolume = 'lg';
     brand.innerHTML = LG_ICON_SVG;
-    volumeSlider.classList.remove('sonos-slider');
   }
 }
 
@@ -350,7 +317,7 @@ function subscribeVolume() {
     const data = JSON.parse(event.data);
     if (data.output !== undefined) updateAudioOutput(data.output);
     if (activeVolume === 'lg') {
-      if (data.volume !== undefined) updateVolumeDisplay(data.volume);
+      if (data.volume !== undefined && ruler) ruler.setVolume(data.volume);
       if (data.muted !== undefined) updateMuteDisplay(data.muted);
     }
     // SSE fires on LG volume change — use as trigger to poll Sonos
