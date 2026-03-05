@@ -1,0 +1,204 @@
+/* sonos.css — Sonos control page styles */
+
+.eq-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: #16213e;
+  border-radius: 12px;
+  padding: 7px 12px;
+  margin-bottom: 8px;
+}
+
+.eq-label {
+  min-width: 50px;
+  font-size: 0.75rem;
+  color: #94a3b8;
+  text-transform: uppercase;
+  letter-spacing: 0.3px;
+  flex-shrink: 0;
+}
+
+.eq-canvas {
+  flex: 1;
+  min-width: 0;
+  display: block;
+  cursor: ew-resize;
+}
+
+.section-title {
+  font-size: 0.75rem;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin: 16px 0 8px;
+}
+
+.toggle-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.toggle-btn {
+  background: #16213e;
+  border: 2px solid #2a3a5c;
+  border-radius: 10px;
+  padding: 12px 8px;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+  text-align: center;
+}
+
+.toggle-btn:active {
+  transform: scale(0.96);
+}
+
+.toggle-btn.active {
+  background: #1b2d4a;
+  border-color: #4a90d9;
+  color: #e0e0e0;
+  box-shadow: 0 0 12px #4a90d944;
+}
+
+.transport-row {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.transport-btn {
+  flex: 1;
+  background: #16213e;
+  border: 2px solid #2a3a5c;
+  border-radius: 10px;
+  padding: 12px 8px;
+  color: #94a3b8;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+.transport-btn:active {
+  background: #1e2d4a;
+  transform: scale(0.96);
+}
+
+/* Now Playing button */
+.now-playing-btn {
+  width: 100%;
+  background: #16213e;
+  border: 2px solid #2a3a5c;
+  border-radius: 10px;
+  padding: 12px;
+  color: #94a3b8;
+  font-size: 0.9rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.now-playing-btn:active {
+  background: #1e2d4a;
+  transform: scale(0.98);
+}
+
+/* Now Playing overlay + popup */
+.np-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 100;
+  padding: 20px;
+}
+
+.np-overlay.hidden {
+  display: none;
+}
+
+.np-popup {
+  background: #16213e;
+  border: 1px solid #2a3a5c;
+  border-radius: 16px;
+  padding: 24px;
+  width: 100%;
+  max-width: 340px;
+  text-align: center;
+}
+
+.np-art-wrap {
+  margin-bottom: 16px;
+}
+
+.np-art {
+  width: 200px;
+  height: 200px;
+  border-radius: 10px;
+  object-fit: cover;
+  background: #0d1826;
+}
+
+.np-art-wrap.no-art {
+  display: none;
+}
+
+.np-title {
+  font-size: 1.05rem;
+  font-weight: 600;
+  color: #e0e0e0;
+  margin-bottom: 4px;
+  line-height: 1.3;
+}
+
+.np-artist {
+  font-size: 0.9rem;
+  color: #94a3b8;
+  margin-bottom: 2px;
+}
+
+.np-album {
+  font-size: 0.8rem;
+  color: #64748b;
+  font-style: italic;
+  margin-bottom: 12px;
+}
+
+.np-time-row {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: #64748b;
+  margin-bottom: 16px;
+  font-variant-numeric: tabular-nums;
+}
+
+.np-nothing {
+  color: #64748b;
+  font-size: 0.9rem;
+  padding: 20px 0;
+}
+
+.np-close {
+  background: #0d1826;
+  border: 1px solid #2a3a5c;
+  border-radius: 8px;
+  padding: 8px 24px;
+  color: #94a3b8;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.np-close:active {
+  background: #1e2d4a;
+}

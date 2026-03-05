@@ -3,6 +3,7 @@
   var pages = [
     { path: '/', title: 'Remote' },
     { path: '/channels.html', title: 'Channels' },
+    { path: '/sonos.html', title: 'Sonos' },
     { path: '/prototype.html', title: 'Prototype' }
   ];
 

@@ -5,7 +5,10 @@ class SlidingRuler {
   constructor(canvas, options = {}) {
     this._c   = canvas;
     this._ctx = canvas.getContext('2d');
-    this._vol = Math.max(0, Math.min(100, options.volume || 0));
+    this._min = options.min ?? 0;
+    this._max = options.max ?? 100;
+    this._labels = options.labels || null; // {0:'Off', 1:'Low', ...}
+    this._vol = Math.max(this._min, Math.min(this._max, options.volume || 0));
     this._onChange = options.onChange || (() => {});
 
     const dpr  = window.devicePixelRatio || 1;
@@ -20,7 +23,7 @@ class SlidingRuler {
 
     this._w   = cssW;
     this._h   = cssH;
-    this._ppu = cssW / 30; // pixels per unit (full width = 30 units)
+    this._ppu = cssW / (options.visibleRange || 30); // pixels per unit
 
     // Interaction state
     this._dragging  = false;
@@ -69,7 +72,7 @@ class SlidingRuler {
     this._vHist.push({ v: dv / dt * 16, t: now }); // store units/frame
     if (this._vHist.length > 6) this._vHist.shift();
 
-    this._vol   = Math.max(0, Math.min(100, this._vol + dv));
+    this._vol   = Math.max(this._min, Math.min(this._max, this._vol + dv));
     this._lastX = e.clientX;
     this._lastT = now;
     this._fireChange();
@@ -92,10 +95,10 @@ class SlidingRuler {
     const FRIC = 0.93;
     const step = () => {
       this._vel *= FRIC;
-      this._vol  = Math.max(0, Math.min(100, this._vol + this._vel));
+      this._vol  = Math.max(this._min, Math.min(this._max, this._vol + this._vel));
       this._fireChange();
       this._draw();
-      if (Math.abs(this._vel) < 0.02 || this._vol <= 0 || this._vol >= 100) {
+      if (Math.abs(this._vel) < 0.02 || this._vol <= this._min || this._vol >= this._max) {
         this._raf = null;
         this._snap();
         return;
@@ -121,7 +124,7 @@ class SlidingRuler {
 
   setVolume(v) {
     if (this._dragging || this._raf) return;
-    this._vol = Math.max(0, Math.min(100, v));
+    this._vol = Math.max(this._min, Math.min(this._max, v));
     this._draw();
   }
 
@@ -148,11 +151,35 @@ class SlidingRuler {
     const uMax = Math.ceil (vol + w / ppu / 2) + 1;
 
     for (let u = uMin; u <= uMax; u++) {
-      if (u < 0 || u > 100) continue;
+      if (u < this._min || u > this._max) continue;
       const x = cx + (u - vol) * ppu;
       if (x < 0 || x > w) continue;
 
       const rx = Math.round(x);
+
+      // Custom labels mode: every labeled position is major, others are minor ticks
+      if (this._labels) {
+        const label = this._labels[u];
+        if (label !== undefined) {
+          const labelSize = Math.round(TRACK_H * 0.38);
+          ctx.font = `bold ${labelSize}px system-ui, sans-serif`;
+
+          ctx.fillStyle = '#4a6080';
+          ctx.fillRect(rx - 0.75, TRACK_Y, 1.5, MID_Y - TRACK_Y - labelSize / 2 - 2);
+          ctx.fillRect(rx - 0.75, MID_Y + labelSize / 2 + 2, 1.5, TRACK_Y + TRACK_H - (MID_Y + labelSize / 2 + 2));
+
+          ctx.fillStyle = '#94a3b8';
+          ctx.textAlign = 'center';
+          ctx.textBaseline = 'middle';
+          ctx.fillText(label, rx, MID_Y);
+          ctx.textBaseline = 'alphabetic';
+        } else {
+          const th = TRACK_H * 0.22;
+          ctx.fillStyle = '#3a5068';
+          ctx.fillRect(rx - 0.5, TRACK_Y + TRACK_H - th, 1, th);
+        }
+        continue;
+      }
 
       if (u % 10 === 0) {
         // Large label — about half the track height

@@ -250,7 +250,7 @@ function sonosStop() {
     '<InstanceID>0</InstanceID>'
   );
 }
-1
+
 function sonosPlayTV() {
   console.log('Switching Sonos to TV input and playing...');
   return sonosRequest(
@@ -563,6 +563,190 @@ app.post('/sonos/volume', async (req, res) => {
   } catch (err) {
     res.status(500).json({ error: err.message });
   }
+});
+
+// ── Sonos now playing ────────────────────────────────────────
+
+app.get('/sonos/now-playing', async (req, res) => {
+  try {
+    const xml = await sonosRequest(
+      '/MediaRenderer/AVTransport/Control',
+      'AVTransport', 'GetPositionInfo',
+      '<InstanceID>0</InstanceID>'
+    );
+    const tag = (name) => { const m = xml.match(new RegExp(`<${name}>(.+?)</${name}>`)); return m ? m[1] : null; };
+    const meta = tag('TrackMetaData');
+    if (!meta) return res.json({ playing: false });
+
+    const decoded = meta.replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&amp;/g, '&').replace(/&apos;/g, "'").replace(/&quot;/g, '"');
+    const mtag = (name) => { const m = decoded.match(new RegExp(`<${name}>(.+?)</${name}>`)); return m ? m[1] : null; };
+
+    res.json({
+      playing: true,
+      title: mtag('dc:title'),
+      artist: mtag('dc:creator'),
+      album: mtag('upnp:album'),
+      albumArt: mtag('upnp:albumArtURI'),
+      duration: tag('TrackDuration'),
+      position: tag('RelTime')
+    });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// ── Sonos EQ control ─────────────────────────────────────────
+
+const EQ_WHITELIST = ['NightMode', 'SpeechEnhanceEnabled', 'DialogLevel', 'SubGain', 'SurroundEnable', 'SurroundMode', 'HeightChannelLevel'];
+
+// Batch fetch all EQ + volume + mute + bass + treble + loudness
+app.get('/sonos/eq/all', async (req, res) => {
+  try {
+    const rc = '/MediaRenderer/RenderingControl/Control';
+    const svc = 'RenderingControl';
+    const inst = '<InstanceID>0</InstanceID>';
+    const chan = '<Channel>Master</Channel>';
+
+    const results = await Promise.allSettled([
+      sonosRequest(rc, svc, 'GetVolume', `${inst}${chan}`),
+      sonosRequest(rc, svc, 'GetMute', `${inst}${chan}`),
+      sonosRequest(rc, svc, 'GetBass', inst),
+      sonosRequest(rc, svc, 'GetTreble', inst),
+      sonosRequest(rc, svc, 'GetLoudness', `${inst}${chan}`),
+      ...EQ_WHITELIST.map(type =>
+        sonosRequest(rc, svc, 'GetEQ', `${inst}<EQType>${type}</EQType>`)
+      )
+    ]);
+
+    const val = (r, regex) => {
+      if (r.status !== 'fulfilled') return null;
+      const m = r.value.match(regex);
+      return m ? parseInt(m[1], 10) : null;
+    };
+
+    const data = {
+      volume: val(results[0], /<CurrentVolume>(-?\d+)<\/CurrentVolume>/),
+      muted: val(results[1], /<CurrentMute>(\d)<\/CurrentMute>/) === 1,
+      bass: val(results[2], /<CurrentBass>(-?\d+)<\/CurrentBass>/),
+      treble: val(results[3], /<CurrentTreble>(-?\d+)<\/CurrentTreble>/),
+      loudness: val(results[4], /<CurrentLoudness>(\d)<\/CurrentLoudness>/) === 1,
+    };
+
+    EQ_WHITELIST.forEach((type, i) => {
+      data[type] = val(results[5 + i], /<CurrentValue>(-?\d+)<\/CurrentValue>/);
+    });
+
+    res.json(data);
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Get single EQ value
+app.get('/sonos/eq/:type', async (req, res) => {
+  const type = req.params.type;
+  if (!EQ_WHITELIST.includes(type)) return res.status(400).json({ error: 'Invalid EQ type' });
+  try {
+    const xml = await sonosRequest(
+      '/MediaRenderer/RenderingControl/Control',
+      'RenderingControl', 'GetEQ',
+      `<InstanceID>0</InstanceID><EQType>${type}</EQType>`
+    );
+    const m = xml.match(/<CurrentValue>(-?\d+)<\/CurrentValue>/);
+    res.json({ type, value: m ? parseInt(m[1], 10) : null });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Set single EQ value
+app.post('/sonos/eq/:type', async (req, res) => {
+  const type = req.params.type;
+  if (!EQ_WHITELIST.includes(type)) return res.status(400).json({ error: 'Invalid EQ type' });
+  try {
+    const value = parseInt(req.body.value, 10);
+    await sonosRequest(
+      '/MediaRenderer/RenderingControl/Control',
+      'RenderingControl', 'SetEQ',
+      `<InstanceID>0</InstanceID><EQType>${type}</EQType><DesiredValue>${value}</DesiredValue>`
+    );
+    res.json({ success: true, type, value });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// Bass get/set
+app.get('/sonos/bass', async (req, res) => {
+  try {
+    const xml = await sonosRequest('/MediaRenderer/RenderingControl/Control', 'RenderingControl', 'GetBass', '<InstanceID>0</InstanceID>');
+    const m = xml.match(/<CurrentBass>(-?\d+)<\/CurrentBass>/);
+    res.json({ value: m ? parseInt(m[1], 10) : null });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/sonos/bass', async (req, res) => {
+  try {
+    const value = parseInt(req.body.value, 10);
+    await sonosRequest('/MediaRenderer/RenderingControl/Control', 'RenderingControl', 'SetBass', `<InstanceID>0</InstanceID><DesiredBass>${value}</DesiredBass>`);
+    res.json({ success: true, value });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Treble get/set
+app.get('/sonos/treble', async (req, res) => {
+  try {
+    const xml = await sonosRequest('/MediaRenderer/RenderingControl/Control', 'RenderingControl', 'GetTreble', '<InstanceID>0</InstanceID>');
+    const m = xml.match(/<CurrentTreble>(-?\d+)<\/CurrentTreble>/);
+    res.json({ value: m ? parseInt(m[1], 10) : null });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/sonos/treble', async (req, res) => {
+  try {
+    const value = parseInt(req.body.value, 10);
+    await sonosRequest('/MediaRenderer/RenderingControl/Control', 'RenderingControl', 'SetTreble', `<InstanceID>0</InstanceID><DesiredTreble>${value}</DesiredTreble>`);
+    res.json({ success: true, value });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Loudness get/set
+app.get('/sonos/loudness', async (req, res) => {
+  try {
+    const xml = await sonosRequest('/MediaRenderer/RenderingControl/Control', 'RenderingControl', 'GetLoudness', '<InstanceID>0</InstanceID><Channel>Master</Channel>');
+    const m = xml.match(/<CurrentLoudness>(\d)<\/CurrentLoudness>/);
+    res.json({ value: m ? parseInt(m[1], 10) === 1 : null });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/sonos/loudness', async (req, res) => {
+  try {
+    const value = req.body.value ? 1 : 0;
+    await sonosRequest('/MediaRenderer/RenderingControl/Control', 'RenderingControl', 'SetLoudness', `<InstanceID>0</InstanceID><Channel>Master</Channel><DesiredLoudness>${value}</DesiredLoudness>`);
+    res.json({ success: true, value: !!req.body.value });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+// Transport controls (AVTransport)
+app.post('/sonos/transport/play', async (req, res) => {
+  try {
+    await sonosRequest('/MediaRenderer/AVTransport/Control', 'AVTransport', 'Play', '<InstanceID>0</InstanceID><Speed>1</Speed>');
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/sonos/transport/pause', async (req, res) => {
+  try {
+    await sonosRequest('/MediaRenderer/AVTransport/Control', 'AVTransport', 'Pause', '<InstanceID>0</InstanceID>');
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
+});
+
+app.post('/sonos/transport/stop', async (req, res) => {
+  try {
+    await sonosRequest('/MediaRenderer/AVTransport/Control', 'AVTransport', 'Stop', '<InstanceID>0</InstanceID>');
+    res.json({ success: true });
+  } catch (err) { res.status(500).json({ error: err.message }); }
 });
 
 // ── Discovery endpoint ────────────────────────────────────────
