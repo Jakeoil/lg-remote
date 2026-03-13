@@ -39,28 +39,30 @@ requestAnimationFrame(() => {
     onChange: vol => postJSON('/sonos/volume', { volume: vol }).catch(() => {})
   });
 
+  const eqOpts = { visibleRange: 15, labels: {'-10':'-10', '-5':'-5', 0:'0', 5:'5', 10:'10'} };
+
   bassRuler = new SlidingRuler(document.getElementById('bass-ruler'), {
-    height: 40, volume: 0, min: -10, max: 10,
+    height: 40, volume: 0, min: -10, max: 10, ...eqOpts,
     onChange: val => postJSON('/sonos/bass', { value: val }).catch(() => {})
   });
 
   trebleRuler = new SlidingRuler(document.getElementById('treble-ruler'), {
-    height: 40, volume: 0, min: -10, max: 10,
+    height: 40, volume: 0, min: -10, max: 10, ...eqOpts,
     onChange: val => postJSON('/sonos/treble', { value: val }).catch(() => {})
   });
 
   heightRuler = new SlidingRuler(document.getElementById('height-ruler'), {
-    height: 40, volume: 0, min: -10, max: 10,
+    height: 40, volume: 0, min: -10, max: 10, ...eqOpts,
     onChange: val => postJSON('/sonos/eq/HeightChannelLevel', { value: val }).catch(() => {})
   });
 
   subRuler = new SlidingRuler(document.getElementById('sub-ruler'), {
-    height: 40, volume: 0, min: -10, max: 10,
+    height: 40, volume: 0, min: -10, max: 10, ...eqOpts,
     onChange: val => postJSON('/sonos/eq/SubGain', { value: val }).catch(() => {})
   });
 
   speechRuler = new SlidingRuler(document.getElementById('speech-ruler'), {
-    height: 40, volume: 0, min: 0, max: 4, visibleRange: 6,
+    height: 40, volume: 0, min: 0, max: 4, visibleRange: 3,
     labels: { 0: 'Off', 1: 'Low', 2: 'Med', 3: 'High', 4: 'Max' },
     onChange: val => setSpeechLevel(val)
   });

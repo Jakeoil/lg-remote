@@ -33,6 +33,8 @@ class SlidingRuler {
     this._raf       = null;
     this._vHist     = [];
     this._lastFired = null;
+    this._downStartX = 0;
+    this._lastTapTime = 0;
 
     canvas.style.touchAction = 'none';
     this._bind();
@@ -54,7 +56,8 @@ class SlidingRuler {
       this._snap();
       return;
     }
-    this._dragging = true;
+    this._dragging  = true;
+    this._downStartX = e.clientX;
     this._lastX    = e.clientX;
     this._lastT    = performance.now();
     this._vHist    = [];
@@ -83,7 +86,34 @@ class SlidingRuler {
   _up(e) {
     if (!this._dragging) return;
     this._dragging = false;
-    const now    = performance.now();
+    const now = performance.now();
+
+    // Tap detection: pointer barely moved
+    if (Math.abs(e.clientX - this._downStartX) < 5) {
+      const rect = this._c.getBoundingClientRect();
+      const tapX = e.clientX - rect.left;
+      const cx = this._w / 2;
+      const mid = (this._min + this._max) / 2;
+
+      // Double-tap near centre → jump to midpoint
+      if (now - this._lastTapTime < 350 && Math.abs(tapX - cx) < this._w * 0.15) {
+        this._lastTapTime = 0;
+        this._vol = mid;
+        this._fireChange();
+        this._draw();
+        return;
+      }
+      this._lastTapTime = now;
+
+      // Single tap: right of hairline → +1, left → -1
+      const delta = tapX > cx ? 1 : -1;
+      this._vol = Math.max(this._min, Math.min(this._max, Math.round(this._vol) + delta));
+      this._fireChange();
+      this._draw();
+      return;
+    }
+
+    this._lastTapTime = 0;
     const recent = this._vHist.filter(h => now - h.t < 120);
     this._vel    = recent.length
       ? recent.reduce((s, h) => s + h.v, 0) / recent.length
