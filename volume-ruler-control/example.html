@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sliding Ruler — Examples</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, sans-serif;
+      background: #0a0f1a;
+      color: #e2e8f0;
+      padding: 24px;
+      max-width: 480px;
+      margin: 0 auto;
+    }
+    h1 { font-size: 1.2rem; margin-bottom: 20px; color: #94a3b8; }
+    h2 { font-size: 0.9rem; margin: 20px 0 8px; color: #64748b; text-transform: uppercase; letter-spacing: 0.05em; }
+    .value { font-size: 1.4rem; font-weight: bold; margin: 4px 0 12px; }
+
+    /* Example 1: using the class directly with a plain <canvas> */
+    .ruler-canvas {
+      display: block;
+      width: 100%;
+    }
+
+    /* Example 2 & 3: the web component fills its container */
+    sliding-ruler {
+      display: block;
+      width: 100%;
+    }
+  </style>
+</head>
+<body>
+
+  <h1>Sliding Ruler Control</h1>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- EXAMPLE 1: Direct class usage (no web component)          -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <h2>1. Direct Class — Volume (0-100)</h2>
+  <p class="value">Value: <span id="val1">25</span></p>
+  <canvas id="ruler1" class="ruler-canvas"></canvas>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- EXAMPLE 2: Web Component — temperature                    -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <h2>2. Web Component — Temperature (60-80)</h2>
+  <p class="value">Value: <span id="val2">72</span></p>
+  <sliding-ruler id="ruler2"
+    min="60" max="80" value="72" height="60"
+    visible-range="14"
+    indicator-color="#e06040">
+  </sliding-ruler>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- EXAMPLE 3: Web Component — labeled scale                  -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <h2>3. Web Component — Custom Labels</h2>
+  <p class="value">Level: <span id="val3">0</span></p>
+  <sliding-ruler id="ruler3"
+    min="0" max="6" value="0" height="60"
+    visible-range="8"
+    indicator-color="#40c080"
+    labels='{"0":"Off","1":"1","2":"2","3":"3","4":"4","5":"5","6":"Max"}'>
+  </sliding-ruler>
+
+  <!-- ═══════════════════════════════════════════════════════════ -->
+  <!-- Scripts                                                    -->
+  <!-- ═══════════════════════════════════════════════════════════ -->
+
+  <!-- The web component auto-registers when imported -->
+  <script type="module" src="sliding-ruler-element.js"></script>
+
+  <!-- Direct class usage -->
+  <script type="module">
+    import { SlidingRuler } from './sliding-ruler.js';
+
+    // Example 1: plain canvas
+    const ruler1 = new SlidingRuler(document.getElementById('ruler1'), {
+      min: 0, max: 100, value: 25, height: 70,
+      onChange(v) { document.getElementById('val1').textContent = v; }
+    });
+
+    // Example 2: web component event
+    document.getElementById('ruler2').addEventListener('change', e => {
+      document.getElementById('val2').textContent = e.detail.value;
+    });
+
+    // Example 3: web component event
+    document.getElementById('ruler3').addEventListener('change', e => {
+      document.getElementById('val3').textContent = e.detail.value;
+    });
+  </script>
+
+</body>
+</html>
