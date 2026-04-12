@@ -13,7 +13,18 @@
   });
   if (cur === -1) cur = 0;
 
+  // Restore last visited page on load (e.g. PWA restart, bookmark)
+  var lastPage = localStorage.getItem('lg-remote-last-page');
+  var curPath = pages[cur].path;
+  if (lastPage && lastPage !== curPath) {
+    localStorage.setItem('lg-remote-last-page', curPath);
+    window.location.replace(lastPage);
+    return;
+  }
+  localStorage.setItem('lg-remote-last-page', curPath);
+
   function go(i) {
+    localStorage.setItem('lg-remote-last-page', pages[i].path);
     window.location.href = pages[i].path;
   }
 
