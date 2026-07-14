@@ -1,5 +1,5 @@
 // sw.js — Service worker: cache static assets for instant page navigation
-const CACHE = 'lg-remote-v2';
+const CACHE = 'lg-remote-v3';
 const ASSETS = [
   '/',
   '/index.html',

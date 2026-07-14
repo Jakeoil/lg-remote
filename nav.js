@@ -13,11 +13,16 @@
   });
   if (cur === -1) cur = 0;
 
-  // Restore last visited page on load (e.g. PWA restart, bookmark)
+  // Restore last visited page on load (e.g. PWA restart, bookmark).
+  // Only from the start_url, so an explicit link to a page isn't hijacked.
+  // sessionStorage (not local) so the guard resets each launch but survives
+  // the replace() below — without it, two pages can redirect to each other.
   var lastPage = localStorage.getItem('lg-remote-last-page');
   var curPath = pages[cur].path;
-  if (lastPage && lastPage !== curPath) {
-    localStorage.setItem('lg-remote-last-page', curPath);
+  var known = pages.some(function (p) { return p.path === lastPage; });
+  if (curPath === '/' && known && lastPage !== curPath &&
+      !sessionStorage.getItem('lg-remote-restored')) {
+    sessionStorage.setItem('lg-remote-restored', '1');
     window.location.replace(lastPage);
     return;
   }
