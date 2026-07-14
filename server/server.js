@@ -75,6 +75,7 @@ function connectTV() {
       console.error('TV connection error:', err.message);
       tvConnected = false;
       tvConnecting = null;
+      try { connection.disconnect(); } catch (e) {}
       reject(err);
     });
 
@@ -85,9 +86,12 @@ function connectTV() {
       tvConnecting = null;
     });
 
+    // A failed attempt must dispose its client or it leaks a socket
+    // and its handlers; callers retry in a loop.
     setTimeout(() => {
       if (!tvConnected) {
         tvConnecting = null;
+        try { connection.disconnect(); } catch (e) {}
         reject(new Error('Connection timed out'));
       }
     }, 5000);
@@ -96,21 +100,33 @@ function connectTV() {
   return tvConnecting;
 }
 
-// Background reconnect: when disconnected, TCP-ping port 3001 every 10s.
-// Only attempts WebSocket connection if the port is actually open.
-setInterval(() => {
-  if (tvConnected || tvConnecting) return;
-  const sock = new net.Socket();
-  sock.setTimeout(2000);
-  sock.once('connect', () => {
-    sock.destroy();
-    console.log('TV port reachable — attempting reconnect...');
-    connectTV().catch(() => {});
-  });
-  sock.once('error', () => sock.destroy());
-  sock.once('timeout', () => sock.destroy());
-  sock.connect(3001, TV_IP);
-}, 10000);
+// Is the TV really awake? Port 3001 stays open in standby — the listener is
+// alive but webOS behind it is not, so the TLS handshake hangs or resets.
+// Only a completed SSAP handshake distinguishes standby from on.
+function tvIsAwake() {
+  return connectTV().then(() => true, () => false);
+}
+
+// Background reconnect. A TV in standby rejects every attempt for as long
+// as it sleeps, so back off instead of retrying at a fixed interval.
+const RECONNECT_MIN_MS = 10000;
+const RECONNECT_MAX_MS = 5 * 60 * 1000;
+let reconnectDelay = RECONNECT_MIN_MS;
+
+async function reconnectTick() {
+  if (!tvConnected && !tvConnecting) {
+    const ok = await tvIsAwake();
+    if (ok) {
+      reconnectDelay = RECONNECT_MIN_MS;
+    } else {
+      reconnectDelay = Math.min(reconnectDelay * 2, RECONNECT_MAX_MS);
+    }
+  } else if (tvConnected) {
+    reconnectDelay = RECONNECT_MIN_MS;
+  }
+  setTimeout(reconnectTick, reconnectDelay);
+}
+setTimeout(reconnectTick, RECONNECT_MIN_MS);
 
 // ── Volume subscription via SSE ──────────────────────────────
 let currentVolume = null;
@@ -793,6 +809,10 @@ app.get('/tv/status', async (req, res) => {
 });
 
 app.post('/tv/off', async (req, res) => {
+  if (!tvConnected) {
+    // Standby refuses the handshake, so there is nothing to turn off.
+    return res.json({ success: true, message: 'TV is already off' });
+  }
   try {
     await tvRequest('ssap://system/turnOff', {});
     tvConnected = false;
@@ -818,33 +838,25 @@ app.post('/tv/wake', async (req, res) => {
       });
     });
 
-    // Poll TV port 3001 until it responds (up to 60 seconds)
+    // Retry the SSAP handshake until it completes. Measured cold-wake time
+    // from standby is ~40s, so allow 90s before giving up.
     console.log('Waiting for TV to wake up...');
+    const deadline = Date.now() + 90000;
     let awake = false;
-    for (let i = 0; i < 30; i++) {
-      await new Promise(r => setTimeout(r, 2000));
-      const reachable = await new Promise((resolve) => {
-        const socket = new net.Socket();
-        socket.setTimeout(2000);
-        socket.on('connect', () => { socket.destroy(); resolve(true); });
-        socket.on('timeout', () => { socket.destroy(); resolve(false); });
-        socket.on('error', () => { socket.destroy(); resolve(false); });
-        socket.connect(3001, TV_IP);
-      });
-      if (reachable) {
+    while (Date.now() < deadline) {
+      if (await tvIsAwake()) {
         awake = true;
         console.log('TV is awake!');
         break;
       }
-      console.log(`Waiting for TV... (${i + 1})`);
+      console.log(`Waiting for TV... (${Math.round((deadline - Date.now()) / 1000)}s left)`);
+      await new Promise(r => setTimeout(r, 2000));
     }
 
     if (awake) {
-      // Establish WebSocket connection so tvConnected becomes true
-      connectTV().catch(() => {});
       res.json({ success: true, message: 'TV is awake' });
     } else {
-      res.json({ success: false, message: 'WoL sent but TV did not respond within 60 seconds' });
+      res.json({ success: false, message: 'WoL sent but TV did not complete a handshake within 90 seconds' });
     }
   } catch (err) {
     console.error('WoL error:', err.message);
