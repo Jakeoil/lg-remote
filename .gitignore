@@ -1,5 +1,7 @@
 node_modules/
 server/node_modules/
+.claude/settings.local.json
+.claude/worktrees/
 .DS_Store
 prompt.txt
 server/.env
