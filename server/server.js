@@ -100,11 +100,30 @@ function connectTV() {
   return tvConnecting;
 }
 
-// Is the TV really awake? Port 3001 stays open in standby — the listener is
-// alive but webOS behind it is not, so the TLS handshake hangs or resets.
-// Only a completed SSAP handshake distinguishes standby from on.
+// Is the TV really on? Neither port 3001 nor a successful handshake answers
+// this. Powered off, the TV sits in "Active Standby": webOS keeps serving
+// SSAP over a live socket indefinitely, so a connection proves nothing about
+// power. Only getPowerState distinguishes on from off.
+//   Active         → on
+//   Active Standby → off, webOS still up (quick start)
+//   Suspend        → off, webOS down (handshake fails outright)
+function tvPowerState() {
+  return new Promise(async (resolve) => {
+    try {
+      const conn = await connectTV();
+      const timer = setTimeout(() => resolve(null), 5000);
+      conn.request('ssap://com.webos.service.tvpower/power/getPowerState', {}, (err, res) => {
+        clearTimeout(timer);
+        resolve(err ? null : (res && res.state) || null);
+      });
+    } catch (err) {
+      resolve(null); // unreachable: deep standby or off the network
+    }
+  });
+}
+
 function tvIsAwake() {
-  return connectTV().then(() => true, () => false);
+  return tvPowerState().then((s) => s === 'Active');
 }
 
 // Background reconnect. A TV in standby rejects every attempt for as long
@@ -476,8 +495,14 @@ app.get('/status', async (req, res) => {
     return res.status(500).json({ error: 'TV not connected' });
   }
   try {
+    // getSoundOutput answers fine in Active Standby, so it cannot stand in
+    // for power. Gate on the real state, which the client reads as "TV off".
+    const state = await tvPowerState();
+    if (state !== 'Active') {
+      return res.status(500).json({ error: 'TV is off', state });
+    }
     const result = await tvRequest('ssap://audio/getSoundOutput', {});
-    res.json({ output: result.soundOutput || result.output || 'unknown' });
+    res.json({ output: result.soundOutput || result.output || 'unknown', state });
   } catch (err) {
     console.error('Error:', err.message);
     res.status(500).json({ error: err.message });
@@ -805,18 +830,30 @@ app.get('/discover', async (req, res) => {
 
 // ── TV power control ─────────────────────────────────────────
 app.get('/tv/status', async (req, res) => {
-  res.json({ reachable: tvConnected });
+  // No socket means deep standby or off the network — never on. Answer at
+  // once rather than stalling the UI on a connect that will time out.
+  if (!tvConnected) {
+    return res.json({ reachable: false, state: null });
+  }
+  const state = await tvPowerState();
+  res.json({ reachable: state === 'Active', state });
 });
 
 app.post('/tv/off', async (req, res) => {
   if (!tvConnected) {
-    // Standby refuses the handshake, so there is nothing to turn off.
     return res.json({ success: true, message: 'TV is already off' });
+  }
+  // A live socket does not mean the TV is on — Active Standby serves SSAP.
+  const state = await tvPowerState();
+  if (state !== 'Active') {
+    return res.json({ success: true, message: 'TV is already off', state });
   }
   try {
     await tvRequest('ssap://system/turnOff', {});
-    tvConnected = false;
-    tvConnection = null;
+    // Do not clear the connection: the TV drops to Active Standby and keeps
+    // serving SSAP on this same socket. Orphaning it here would leak it and
+    // make the reconnect loop open a second one. Power is reported by
+    // getPowerState, not by whether a socket exists.
     res.json({ success: true, message: 'TV is off' });
   } catch (err) {
     console.error('TV off error:', err.message);
