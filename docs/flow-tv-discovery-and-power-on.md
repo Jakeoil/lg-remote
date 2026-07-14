@@ -43,6 +43,25 @@ app.listen(:3000)
 
 ---
 
+## Power states (read this first)
+
+The TV has three states and **two of them are "off"**. Port 3001 is open in all
+three, so it says nothing about power:
+
+| `getPowerState`  | Screen | webOS / SSAP         | TLS handshake |
+|------------------|--------|----------------------|---------------|
+| `Active`         | ON     | serving              | succeeds      |
+| `Active Standby` | OFF    | **serving normally** | succeeds      |
+| `Suspend`        | OFF    | down                 | ECONNRESET    |
+
+A powered-off TV sits in `Active Standby` answering SSAP on a live socket for
+minutes (measured: 96s+), then decays to `Suspend`. Power is therefore read
+**only** via `tvPowerState()` →
+`ssap://com.webos.service.tvpower/power/getPowerState`. A live socket,
+a successful handshake, or `/status` succeeding all mean nothing.
+
+---
+
 ## Power On (Wake-on-LAN)
 
 ```
@@ -52,36 +71,25 @@ User clicks power button (red)
 POST /tv/wake
   │
   ▼
-wol.wake("44:27:45:06:D6:E2")
+wol.wake("44:27:45:06:D6:E2")   (TV_MAC pinned in .env)
   └─ UDP magic packet → broadcast 255.255.255.255
   │
   ▼
-Poll TCP port 3001 @ 192.168.1.238
-  every 2s, up to 60s
-  │
-  ├─ not yet... (TV booting)
-  ├─ not yet...
-  └─ connected! TV is awake
+Retry tvIsAwake() until deadline (90s)
+  └─ connectTV() → getPowerState
+       ├─ handshake fails      → Suspend, not awake yet
+       ├─ state=Active Standby → still OFF, keep waiting
+       └─ state=Active         → awake!
+  │                    (measured: ~7s warm, ~40s from cold standby)
+  ▼
+{ success: true } → browser        ← only after a real Active reading
   │
   ▼
-connectTV()
-  └─ WebSocket wss://192.168.1.238:3001
-       ├─ TLS handshake (self-signed, no verify)
-       ├─ SSAP pairing (client key from ~/.lgtv2/)
-       └─ connected → tvConnected = true
-            └─ subscribe ssap://audio/getVolume
-                 └─ volume updates stream to browser via SSE
-  │
-  ▼
-{ success: true } → browser
-  │
-  ▼
-updatePowerButton(true) → green
-  │
-  ▼
-GET /status
-  └─ tvRequest(ssap://audio/getSoundOutput)
-       └─ e.g. "external_arc" → status bar updated
+GET /status  (polled every 5s)
+  └─ tvPowerState() → Active?
+       ├─ no  → 500 { error: "TV is off" } → button red
+       └─ yes → tvRequest(ssap://audio/getSoundOutput)
+                 └─ e.g. "external_arc" → status bar updated
 ```
 
 ---
@@ -94,18 +102,23 @@ User clicks power button (green)
   ▼
 POST /tv/off
   │
+  ├─ !tvConnected        → { success: true, "TV is already off" }
+  ├─ state !== "Active"  → { success: true, "TV is already off" }
+  │                         (Active Standby serves SSAP — a live
+  │                          socket is not proof the TV is on)
   ▼
 tvRequest(ssap://system/turnOff)
-  └─ SSAP command over existing WebSocket
   │
   ▼
-tvConnected = false
-tvConnection = null
+TV → "Active Standby"; the socket STAYS UP and keeps serving.
+Do not clear tvConnection here — orphaning it leaks the socket and
+makes the reconnect loop open a second one. /status reports power
+from getPowerState, so the button goes red on its own.
   │
   ▼
 { success: true } → browser
-  │
-  ▼
-updatePowerButton(false) → red
-showStatus("TV is off")
 ```
+
+> The TV does **not** get woken back up by the Sonos or Roku over CEC. That was
+> tested three ways and disproven; an apparent self-wake was `Active Standby`
+> being misread as "on". See `CLAUDE.md`.
