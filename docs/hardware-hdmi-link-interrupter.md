@@ -65,9 +65,9 @@ USB 5V ──┬──────────────┬──────�
                 │
 USB GND ────────┴───────────────────────
 
-K1 pole A: pin 13 (CEC)      — normally open
-K1 pole B: pin 19 (HPD/HEAC−) — normally open
-K2 pole A: pin 14 (HEAC+)     — normally open
+K1 pole A: pin 14 (HEAC+)     — normally open ┐ the eARC pair shares one
+K1 pole B: pin 19 (HPD/HEAC−) — normally open ┘ relay so it stays matched
+K2 pole A: pin 13 (CEC)       — normally open
 K2 pole B: spare
 ```
 
@@ -79,9 +79,13 @@ K2 pole B: spare
 - Coil draw ~40 mA total; any USB wall wart on the Kasa suffices.
 - Route pins 14 and 19 through **adjacent poles with matched short leads** —
   they are a differential pair carrying eARC audio (~100 Mbps) when closed.
-- Optional but recommended: a 3-position toggle in the coil supply —
-  **CONNECT / AUTO / DISCONNECT** — preserving the manual-override habit and
-  giving a bypass if the Kasa or app misbehaves.
+- Optional: a manual override switch. Caveat found during PCB spec: on a
+  single Kasa-switched supply, only **AUTO / force-DISCONNECT** is possible —
+  force-CONNECT needs power, and Kasa-off means the board is dark. Full
+  three-way override requires an always-on supply with the Kasa 5 V as a
+  sense signal (see the PCB spec, "Power architecture"). The v1 fallback for
+  "force connect" is simply unplugging one HDMI cable from the device, same
+  as with the coupler today.
 
 ## BOM (~$25)
 
@@ -110,10 +114,10 @@ pass-through jumpers, relays on perfboard for 13/14/19. Care points:
 - Bench-test with a continuity meter across all 19 pins in both relay states
   before ever inserting it in the chain.
 
-**Route B — small 2-layer PCB** once Route A proves the concept: two HDMI-A
-receptacles on opposite board edges, straight traces, 14/19 as a 100 Ω
-differential pair through adjacent relay poles, USB-C for power. ~$10 in
-boards from a proto house. KiCad design can be produced on request.
+**Route B — small 2-layer PCB** once Route A proves the concept. Fully
+specified in **`hardware-hdmi-interrupter-pcb.md`** — netlist, BOM with
+footprints, placement, routing rules, fab and bring-up. ~$10 in boards from a
+proto house.
 
 ## Risks
 
