@@ -172,6 +172,22 @@ Expect 200. Don't write Roku code before that returns 200 — it cannot be teste
 Once unblocked, the Roku's HDMI-CEC one-touch-play is a wake path immune to WiFi
 power-saving, using hardware already owned.
 
+### 9. HDMI link interrupter — hardware project `[?]`
+Replace the mains-cut sledgehammer with a relay that breaks the TV↔Sonos HDMI
+link itself (pins 13/14/19), leaving the Sonos powered so **Spotify Connect
+survives mode switches** and normal mode loses its ~22s reboot wait. Fits in
+the existing female-female coupler spot; USB-powered from the Kasa;
+powered = connected, so plug semantics and all three `/audio/*` endpoints are
+unchanged.
+
+Full design — mechanism, pinout, circuit, BOM (~$25), build routes, risks,
+test plan: **`docs/hardware-hdmi-link-interrupter.md`**.
+
+Step 0 (free): confirm that manually unplugging at the coupler *while the
+Sonos is powered* frees the TV's optical/internal outputs. Believed yes from
+daily practice. If it does, the concept is proven; build the perfboard
+version before any PCB. Done when: test plan in the design doc passes.
+
 ---
 
 ## Template
