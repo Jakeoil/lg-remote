@@ -15,6 +15,16 @@ The cost: every switch to headphone/gaming mode **kills Spotify Connect**,
 which the user runs constantly and independently of the TV, and returning to
 normal mode eats a ~22s Sonos reboot.
 
+History that matters: the lockout is **not** a blanket LG/ARC behavior. The
+previous soundbar — plain ARC, no eARC — coexisted with manual output
+override for years on this same TV. The lockout arrived six months ago with
+the Sonos Arc (and the app followed within weeks; first commits 2026-02).
+So the grip is something about eARC negotiation or the Arc's CEC behavior
+specifically. Unverified corollary worth remembering: if this device's
+closed state ever degrades the link from eARC to legacy ARC, the lockout
+itself may relax — the documented "worst case" could turn out to be a
+partial win. Do not design around this; note it if observed.
+
 The TV cannot see the Sonos's mains state. It only knows what the cable tells
 it — hot-plug detect, CEC, and the eARC lines. Cutting mains "works" precisely
 because it makes those lines go dead. This device cuts the same lines directly
@@ -152,11 +162,12 @@ condemn the design** — build the PCB anyway. Care points if built:
   DD+ Atmos anyway (the Roku Ultra does not pass lossless TrueHD, and the
   TV's apps emit DD+). Lossless Atmos only enters the picture if a Blu-ray
   player is ever added.
-- **Baseline is already proven inline:** the link has run eARC for years
-  through a passive 8K coupler with a Sonos-supplied 4K cable on one side.
-  The board is that coupler plus relay contacts on three pins. If the device
-  misbehaves with relays closed, the fault is unambiguously the board — the
-  cables and the junction concept are known good.
+- **Baseline is already proven inline:** the link has run eARC for the six
+  months the Sonos Arc has existed in this system, through a passive 8K
+  coupler with a Sonos-supplied 4K cable on one side. The board is that
+  coupler plus relay contacts on three pins. If the device misbehaves with
+  relays closed, the fault is unambiguously the board — the cables and the
+  junction concept are known good.
 - This device carries no video, so it cannot cause the screen-flashing
   failure seen when a 4K source runs on an inadequate cable (that is TMDS
   bandwidth, a different path entirely). Worst case here is audio-side only.

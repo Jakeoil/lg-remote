@@ -16,6 +16,10 @@ The user's primary listening is headphones via optical.
 it into `sonosStop()`/`sonosMute()` — those leave the Sonos powered and
 ARC-negotiated, so the TV still refuses optical.
 
+The lockout is an eARC-era behavior, not blanket LG/ARC: the previous
+plain-ARC soundbar coexisted with manual output override on this same TV.
+The Sonos Arc arrived ~2026-01; this app followed within weeks.
+
 The user also runs **Spotify Connect on the Sonos constantly, independently of
 the TV**. Anything that cuts Sonos power or hijacks its input on a TV action
 will kill their music. This rules out "cut the plug when the TV turns off".
