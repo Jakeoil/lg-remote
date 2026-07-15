@@ -65,27 +65,16 @@ blaster is not needed.
 three ways (Sonos off-bus / idle / actively streaming ARC) — the TV stayed off
 every time. An apparent self-wake was `Active Standby` being misread.
 
-## Known latent issues (unfixed, found by inspection — not verified)
+## Known issues
 
-- **`sonosRequest` ignores HTTP status** (`server.js` ~250). Resolves on any
-  response, so a SOAP fault (HTTP 500 + fault body) is treated as success.
-  Every Sonos call inherits this.
-- **`sonosEnsureTVInput` can hijack Spotify** (`server.js` ~261, called from
-  `POST /sonos/volume`). It checks `CurrentTransportState !== 'PLAYING'` but
-  never checks *what* is playing, so **paused** Spotify gets switched to the TV
-  input (and asserts CEC). Its `catch` forces `sonosPlayTV()` on any transient
-  error. Should compare `CurrentURI` against `x-sonos-htastream:`.
-- **`getPlug()` caches forever** (`server.js` ~314). `if (kasaPlug) return
-  kasaPlug;` never revalidates, so a stale handle survives the plug changing
-  IP or dropping off.
-- **`sonosReachable()` is a port-1400 probe** (`server.js` ~348), used by
-  `/audio/normal` to decide the Sonos has booted, then sleeps a magic 3s to
-  cover the gap between "port open" and "actually ready" — the same proxy-state
-  shape as the TV bug. (Boot measured ~22s; the 60s budget is fine.)
-- **Plug-less fallback** in `/audio/gaming` and `/audio/headphone`
-  (`else { sonosStop(); sonosMute(true); }`) cannot free the optical output per
-  the constraint above, and returns `success: true` regardless. Only runs if
-  the Kasa is unreachable.
+**`docs/worklist.md` is the single source of truth** — ranked, with fix
+sketches, verification steps and risk. Read it before picking up work; add new
+issues there rather than here.
+
+Headline: the top item is that `sonosEnsureTVInput` hijacks **paused** Spotify
+onto the TV input (and asserts CEC) on any `POST /sonos/volume`. Note the
+ordering constraint recorded there — fixing `sonosRequest`'s ignored HTTP
+status *before* that one makes the hijack fire more often, not less.
 
 ## Conventions
 
