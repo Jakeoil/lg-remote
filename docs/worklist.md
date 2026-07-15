@@ -183,10 +183,12 @@ unchanged.
 Full design — mechanism, pinout, circuit, BOM (~$25), build routes, risks,
 test plan: **`docs/hardware-hdmi-link-interrupter.md`**.
 
-Step 0 (free): confirm that manually unplugging at the coupler *while the
-Sonos is powered* frees the TV's optical/internal outputs. Believed yes from
-daily practice. If it does, the concept is proven; build the perfboard
-version before any PCB. Done when: test plan in the design doc passes.
+Step 0 (free, two tests at the coupler): unplug *while the Sonos is powered* —
+TV must free optical/internal with Spotify uninterrupted. Replug — Atmos must
+renegotiate **unattended**. If both pass, build the PCB
+(`docs/hardware-hdmi-interrupter-pcb.md`); the perfboard is an optional smoke
+test whose audio failures are ambiguous and must not condemn the design.
+Done when: test plan in the design doc passes.
 
 ---
 

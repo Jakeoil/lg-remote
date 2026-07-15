@@ -26,10 +26,22 @@ and leaves the Sonos running:
 - Manual unplugging at the coupler (the current habit) is replaced by a relay
   doing the same thing electrically
 
-**Concept validation:** manually unplugging at the coupler while the Sonos is
-powered is the exact electrical event this device produces. If that frees the
-TV's optical/internal outputs (believed yes from daily practice — confirm
-once, deliberately), the concept is proven.
+**Concept validation — two free tests at the coupler, before any build:**
+manually unplugging at the coupler while the Sonos is powered is the exact
+electrical event this device produces.
+
+1. Unplug → does the TV free optical/internal outputs, with Spotify on the
+   Sonos uninterrupted? (Believed yes from daily practice — confirm once,
+   deliberately.)
+2. Replug → does eARC/Atmos renegotiate **unattended**, without touching
+   either device? This is the make-or-break for the return-to-normal path,
+   and no board revision can fix it if it fails — it would be a protocol
+   problem, not a signal problem.
+
+If handshake trouble ever appears, keep those two causes separate: protocol
+failures show up in test 2 through perfect copper; signal-integrity failures
+only appear with the device inline. Only the second kind is the board's
+fault, and only that kind is fixable by better layout.
 
 ## The key simplification
 
@@ -104,8 +116,23 @@ power relay is not.
 
 ## Build routes
 
-**Route A — perfboard first (recommended).** Two breakout boards, 16
-pass-through jumpers, relays on perfboard for 13/14/19. Care points:
+Sequencing: **free coupler tests → Route B.** Route A was originally
+"perfboard first", but that had it backwards: the one risk the perfboard
+uniquely probes — eARC through relay contacts — is the thing it measures
+worst. Flying jumpers and breakout stubs mean a perfboard audio failure is
+ambiguous (construction or concept?), while only its *success* is
+informative. The behavioral unknowns are covered for free by the coupler
+tests above, so once those pass, build the PCB.
+
+**Route B — small 2-layer PCB (the primary build).** Fully specified in
+**`hardware-hdmi-interrupter-pcb.md`** — netlist, BOM with footprints,
+placement, routing rules, fab and bring-up. ~$10 in boards from a proto
+house.
+
+**Route A — perfboard (optional smoke test only).** Worth doing only if
+parts are already on hand. Two breakout boards, 16 pass-through jumpers,
+relays for 13/14/19. Standing rule: **an audio failure on Route A must never
+condemn the design** — build the PCB anyway. Care points if built:
 
 - Twist the pin 14/19 jumpers together and keep them short — that pair is
   live eARC audio when connected.
@@ -114,18 +141,25 @@ pass-through jumpers, relays on perfboard for 13/14/19. Care points:
 - Bench-test with a continuity meter across all 19 pins in both relay states
   before ever inserting it in the chain.
 
-**Route B — small 2-layer PCB** once Route A proves the concept. Fully
-specified in **`hardware-hdmi-interrupter-pcb.md`** — netlist, BOM with
-footprints, placement, routing rules, fab and bring-up. ~$10 in boards from a
-proto house.
-
 ## Risks
 
 - **eARC through closed relay contacts** is the one real unknown: the
   impedance bump can cause negotiation hiccups or dropouts. Mitigations:
   telecom-class relays, short matched leads. **Fallback is graceful:** if eARC
   won't hold, TV and Sonos drop to legacy ARC, which on a Sonos Arc still
-  carries Atmos via Dolby Digital Plus — lower bitrate, not silence.
+  carries Atmos via Dolby Digital Plus — lower bitrate, not silence. And in
+  this system the fallback costs nothing in practice: the sources top out at
+  DD+ Atmos anyway (the Roku Ultra does not pass lossless TrueHD, and the
+  TV's apps emit DD+). Lossless Atmos only enters the picture if a Blu-ray
+  player is ever added.
+- **Baseline is already proven inline:** the link has run eARC for years
+  through a passive 8K coupler with a Sonos-supplied 4K cable on one side.
+  The board is that coupler plus relay contacts on three pins. If the device
+  misbehaves with relays closed, the fault is unambiguously the board — the
+  cables and the junction concept are known good.
+- This device carries no video, so it cannot cause the screen-flashing
+  failure seen when a 4K source runs on an inadequate cable (that is TMDS
+  bandwidth, a different path entirely). Worst case here is audio-side only.
 - Relay contact bounce (~1 ms) is far below TV HPD debounce (~100 ms); the TV
   sees a clean unplug/replug.
 - Which side faces TV vs Sonos doesn't matter for the switched pins.

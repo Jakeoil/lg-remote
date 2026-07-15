@@ -3,8 +3,14 @@
 Status: **spec, not laid out.** Companion to
 `hardware-hdmi-link-interrupter.md` (concept, why, test plan). This file is
 the input to the KiCad work: netlist, BOM with footprints, placement, routing
-rules, and fab notes. Do Route A (perfboard) first; this board is the
-clean-up, not the experiment.
+rules, and fab notes.
+
+**This board is the primary build.** Gate it on the two free coupler tests in
+the design doc (outputs freed on unplug; Atmos renegotiates unattended on
+replug) — those cover the behavioral unknowns through perfect copper. The
+perfboard Route A is an optional smoke test only: it measures the board's one
+real risk (eARC through relay contacts) so badly that its audio failures are
+ambiguous and must not condemn the design.
 
 ## Two corrections to the Route A sketch
 
